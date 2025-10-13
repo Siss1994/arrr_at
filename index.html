@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D 큐브 일반/대회 모드</title>
+    <title>3D Cube Competition Modes</title>
     <style>
         * {
             box-sizing: border-box;
@@ -152,6 +152,57 @@
             color: rgba(255, 255, 255, 0.95);
         }
 
+        .solution-box {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: rgba(20, 24, 38, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .solution-box.visible {
+            display: flex;
+        }
+
+        .solution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: rgba(220, 230, 255, 0.8);
+        }
+
+        .solution-sequence {
+            font-size: 14px;
+            font-weight: 600;
+            color: #f5f5ff;
+            word-break: break-word;
+            line-height: 1.6;
+        }
+
+        .solution-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .solution-action-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.12);
+            color: #f5f7ff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .solution-action-btn:hover {
+            background: rgba(110, 180, 255, 0.35);
+        }
+
         .speed-control {
             margin-top: 16px;
             padding: 12px 14px;
@@ -181,6 +232,34 @@
             color: rgba(210, 220, 245, 0.7);
             display: flex;
             justify-content: space-between;
+        }
+
+        .language-selector {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .language-selector label {
+            font-size: 12px;
+            color: rgba(220, 225, 245, 0.8);
+        }
+
+        .language-selector select {
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            color: #f5f7ff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .language-selector select:focus {
+            outline: none;
+            border-color: rgba(110, 180, 255, 0.6);
+            box-shadow: 0 0 0 2px rgba(110, 180, 255, 0.25);
         }
 
         .mobile-face-controls {
@@ -248,7 +327,7 @@
 
         body.mobile-view #view-guide {
             right: 16px;
-            bottom: 280px;
+            bottom: 340px;
             top: auto;
             transform: translateY(0);
         }
@@ -586,6 +665,7 @@
             }
         }
     </style>
+    <script src="strings.js"></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
          crossorigin="anonymous"></script>
 </head>
@@ -593,80 +673,97 @@
     <div id="scene-container"></div>
 
     <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-expanded="false" aria-controls="hud" data-expanded="false">
-        메뉴 열기
+        Open Menu
     </button>
 
     <div id="hud">
         <div class="panel">
-            <h1>3D 큐브 스테이션</h1>
-            <p class="subtitle">일반 연습과 대회 모드를 선택해 기록을 쌓아보세요.</p>
+            <h1 id="title-main">3D Cube Station</h1>
+            <p class="subtitle" id="subtitle-main">Choose a mode to practice or compete and track your best results.</p>
 
             <div class="mode-switch">
-                <button id="mode-normal" class="mode-btn active" data-mode="normal">일반 모드</button>
-                <button id="mode-competition" class="mode-btn" data-mode="competition">대회 모드</button>
+                <button id="mode-normal" class="mode-btn active" data-mode="normal">Normal Mode</button>
+                <button id="mode-competition" class="mode-btn" data-mode="competition">Competition Mode</button>
             </div>
 
             <div class="status-grid">
                 <div class="status-card">
-                    <span class="status-label">상태</span>
-                    <span class="status-value" id="status-text">완료</span>
+                    <span class="status-label" id="status-label">Status</span>
+                    <span class="status-value" id="status-text">Complete</span>
                 </div>
                 <div class="status-card">
-                    <span class="status-label">이동 수</span>
+                    <span class="status-label" id="moves-label">Moves</span>
                     <span class="status-value" id="move-count">0</span>
                 </div>
                 <div class="status-card">
-                    <span class="status-label">대회 타이머</span>
+                    <span class="status-label" id="timer-label">Competition Timer</span>
                     <span class="status-value timer-display" id="timer-display">00:00.00</span>
                 </div>
                 <div class="status-card">
-                    <span class="status-label">스크램블</span>
+                    <span class="status-label" id="scramble-label">Scramble</span>
                     <span class="status-value" id="scramble-length">-</span>
                 </div>
             </div>
 
-            <div id="scramble-sequence">스크램블을 실행하면 수열이 표시됩니다.</div>
+            <div id="scramble-sequence">Run a scramble to display the sequence.</div>
 
             <div class="speed-control">
-                <label for="rotation-speed">
-                    회전 속도
-                    <span id="rotation-speed-value">0.26초</span>
+                <label for="rotation-speed" id="rotation-speed-label">
+                    Rotation Speed
+                    <span id="rotation-speed-value">0.26s</span>
                 </label>
                 <input type="range" id="rotation-speed" min="120" max="600" step="20" value="260">
                 <div class="speed-hint">
-                    <span>빠르게</span>
-                    <span>느리게</span>
+                    <span id="speed-fast-label">Faster</span>
+                    <span id="speed-slow-label">Slower</span>
                 </div>
             </div>
 
+            <div class="language-selector">
+                <label for="language-select" id="language-select-label">Language</label>
+                <select id="language-select"></select>
+            </div>
+
             <div class="instruction-block">
-                <strong>단축키 안내</strong>
-                <div>큐브 면 회전: F / R / U / L / B / D (Shift = 반시계)</div>
-                <div>왼손 보조키: Q W E / A S D / Z X C</div>
-                <div>오른손 보조키: } { ㅖ / " : ㅣ / ? > &lt; (Shift = 반시계)</div>
-                <div>시점 이동: ← →, ↑ ↓ 또는 우측 가이드 버튼 클릭 (16개 고정 시점)</div>
-                <div>되돌리기: ↩️ 버튼, 섞기 후 첫 회전은 자동 타이머 시작</div>
-                <div>모바일: 아래 회전 버튼과 우측 시점 가이드를 활용하세요.</div>
+                <strong id="instruction-title">Keyboard Shortcuts</strong>
+                <div id="instruction-face">Cube faces: F / R / U / L / B / D (Shift = counter-clockwise)</div>
+                <div id="instruction-left">Left hand helper keys: Q W E / A S D / Z X C</div>
+                <div id="instruction-right">Right hand helper keys: } { ㅖ / " : ㅣ / ? > &lt; (Shift = counter-clockwise)</div>
+                <div id="instruction-view">View adjustment: ← →, ↑ ↓ or click the guide on the right</div>
+                <div id="instruction-undo">Undo: ↩️ button, timer starts automatically after the first move</div>
+                <div id="instruction-mobile">Mobile: use the bottom rotation pad and the guide buttons</div>
+            </div>
+
+            <div class="solution-box" id="solution-box">
+                <div class="solution-header">
+                    <span id="solution-header-text">Solution Sequence</span>
+                    <button class="solution-action-btn" id="solution-apply-btn">Apply Automatically</button>
+                </div>
+                <div class="solution-sequence" id="solution-sequence">The calculated solution will appear here.</div>
+                <div class="solution-actions">
+                    <button class="solution-action-btn" id="solution-hide-btn">Close</button>
+                </div>
             </div>
 
         </div>
 
         <div class="panel">
             <div class="controls">
-                <button id="scramble-btn" class="control-btn">🎲 섞기</button>
-                <button id="reset-btn" class="control-btn">🔄 초기화</button>
-                <button id="undo-btn" class="control-btn">↩️ 되돌리기</button>
+                <button id="scramble-btn" class="control-btn">🎲 Scramble</button>
+                <button id="reset-btn" class="control-btn">🔄 Reset</button>
+                <button id="undo-btn" class="control-btn">↩️ Undo</button>
+                <button id="solution-btn" class="control-btn">🧠 Show Solution</button>
             </div>
             <p class="hint competition-only hidden" id="competition-hint">
-                대회 모드에서는 섞기 후 첫 회전을 하면 타이머가 자동으로 시작됩니다. 해결 즉시 기록이 리더보드에 저장됩니다.
+                In competition mode, the timer starts automatically after the first move. Solved records are saved immediately.
             </p>
         </div>
     </div>
 
     <div id="leaderboard-panel" class="panel">
-        <div class="leaderboard-title">🏆 리더보드</div>
+        <div class="leaderboard-title" id="leaderboard-title">🏆 Leaderboard</div>
         <ol id="leaderboard-list"></ol>
-        <button id="clear-leaderboard">기록 초기화</button>
+        <button id="clear-leaderboard">Clear Records</button>
     </div>
 
     <div id="view-guide">
@@ -691,8 +788,8 @@
 
     <div id="competition-overlay">
         <div class="competition-overlay-box">
-            <h2 id="competition-overlay-title">대회 준비 중</h2>
-            <p id="competition-overlay-message">큐브를 섞고 있습니다.</p>
+            <h2 id="competition-overlay-title">Preparing</h2>
+            <p id="competition-overlay-message">Shuffling the cube...</p>
             <div id="inspection-timer"></div>
         </div>
     </div>
@@ -760,14 +857,129 @@
         };
 
         const LEFT_HAND_CODES = ['KeyQ', 'KeyW', 'KeyE', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyX', 'KeyC'];
-        const RIGHT_HAND_CODES = ['BracketRight', 'BracketLeft', 'Backslash', 'Quote', 'Semicolon', 'KeyL', 'Slash', 'Period', 'Comma'];
+const RIGHT_HAND_CODES = ['BracketRight', 'BracketLeft', 'Backslash', 'Quote', 'Semicolon', 'KeyL', 'Slash', 'Period', 'Comma'];
 
-        LEFT_HAND_CODES.forEach((code, index) => {
-            CODE_TO_FACE[code] = FACE_SEQUENCE[index];
-        });
-        RIGHT_HAND_CODES.forEach((code, index) => {
-            CODE_TO_FACE[code] = FACE_SEQUENCE[index];
-        });
+LEFT_HAND_CODES.forEach((code, index) => {
+    CODE_TO_FACE[code] = FACE_SEQUENCE[index];
+});
+RIGHT_HAND_CODES.forEach((code, index) => {
+    CODE_TO_FACE[code] = FACE_SEQUENCE[index];
+});
+
+const DEFAULT_TEXTS = {
+    title_main: '3D Cube Station',
+    subtitle_main: 'Choose a mode to practice or compete and track your best results.',
+    mode_normal: 'Normal Mode',
+    mode_competition: 'Competition Mode',
+    label_status: 'Status',
+    label_moves: 'Moves',
+    label_timer: 'Competition Timer',
+    label_scramble: 'Scramble',
+    scramble_placeholder: 'Run a scramble to display the sequence.',
+    scramble_in_progress: 'Scrambling...',
+    speed_label: 'Rotation Speed',
+    speed_fast: 'Faster',
+    speed_slow: 'Slower',
+    speed_unit_suffix: 's',
+    language_label: 'Language',
+    language_option_ko: 'Korean',
+    language_option_zh: 'Chinese',
+    language_option_en: 'English',
+    language_option_ja: 'Japanese',
+    language_option_ar: 'Arabic',
+    language_option_hi: 'Hindi',
+    instruction_title: 'Keyboard Shortcuts',
+    instruction_face_controls: 'Cube faces: F / R / U / L / B / D (Shift = counter-clockwise)',
+    instruction_left_keys: 'Left hand helper keys: Q W E / A S D / Z X C',
+    instruction_right_keys: 'Right hand helper keys: } { ㅖ / " : ㅣ / ? > < (Shift = counter-clockwise)',
+    instruction_view: 'View adjustment: ← →, ↑ ↓ or click the guide on the right',
+    instruction_undo: 'Undo: ↩️ button, timer starts automatically after the first move',
+    instruction_mobile: 'Mobile: use the bottom rotation pad and the guide buttons',
+    btn_scramble: '🎲 Scramble',
+    btn_reset: '🔄 Reset',
+    btn_undo: '↩️ Undo',
+    btn_solution: '🧠 Show Solution',
+    solution_header: 'Solution Sequence',
+    solution_apply: 'Apply Automatically',
+    solution_close: 'Close',
+    solution_placeholder: 'The calculated solution will appear here.',
+    solution_processing: 'Applying solution automatically...',
+    solution_applied_message: 'Solution has been applied.',
+    solution_already_solved: 'The cube is already solved.',
+    leaderboard_title: '🏆 Leaderboard',
+    leaderboard_clear: 'Clear Records',
+    leaderboard_empty: 'No records yet.',
+    meta_moves_prefix: 'Moves ',
+    meta_penalty: 'Inspection penalty: +2',
+    meta_scramble_prefix: 'Scramble: ',
+    dnf_label: 'DNF',
+    status_complete: 'Complete',
+    status_in_progress: 'In progress',
+    status_preparing: 'Preparing',
+    status_hold: 'Hold to start',
+    status_inspecting: 'Inspecting',
+    status_solving: 'Solving',
+    status_failed: 'Attempt failed',
+    competition_hint: 'In competition mode, the timer starts automatically after the first move. Solved records are saved immediately.',
+    overlay_prepare_title: 'Preparing',
+    overlay_prepare_message: 'Shuffling the cube...',
+    overlay_ready_title: 'Ready',
+    overlay_ready_message: 'Hold the spacebar for 2 seconds to inspect the cube for 15 seconds.',
+    overlay_shuffle_failed_title: 'Shuffle Failed',
+    overlay_shuffle_failed_message: 'Press the spacebar to try again.',
+    overlay_retry_title: 'Try Again',
+    overlay_retry_message: 'Hold the spacebar for 2 seconds.',
+    overlay_hold_title: 'Get Ready',
+    overlay_hold_message: 'Hold the spacebar for 2 seconds.',
+    overlay_inspection_title: 'Inspection',
+    overlay_inspection_message: 'Release the spacebar within 15 seconds to begin solving.',
+    overlay_inspection_penalty_message: 'Inspection time exceeded (+2 seconds). Release before 17 seconds!',
+    overlay_fail_title: 'Attempt Failed',
+    overlay_fail_timeout_message: 'Inspection exceeded 17 seconds.',
+    overlay_fail_general_message: 'The attempt did not meet the requirements.',
+    overlay_result_title: 'Result Saved',
+    overlay_result_message_prefix: 'Your time:',
+    overlay_result_penalty_suffix: '(+2)',
+    overlay_solution_disabled_title: 'Competition Mode',
+    overlay_solution_disabled_message: 'Solution preview is disabled during competition.',
+    timer_penalty_suffix: ' (+2)',
+    inspection_timer_suffix: 's',
+    menu_open: 'Open Menu',
+    menu_close: 'Close Menu'
+};
+
+const LANGUAGE_OPTIONS = [
+    { value: 'ko', labelKey: 'language_option_ko' },
+    { value: 'zh', labelKey: 'language_option_zh' },
+    { value: 'en', labelKey: 'language_option_en' },
+    { value: 'ja', labelKey: 'language_option_ja' },
+    { value: 'ar', labelKey: 'language_option_ar' },
+    { value: 'hi', labelKey: 'language_option_hi' }
+];
+
+const SUPPORTED_LANGUAGES = LANGUAGE_OPTIONS.map(option => option.value);
+
+const LANGUAGE_ALIASES = {
+    'ko-kr': 'ko',
+    'zh-cn': 'zh',
+    'zh-tw': 'zh',
+    'zh-hk': 'zh',
+    'zh': 'zh',
+    'en-us': 'en',
+    'en-gb': 'en',
+    'en-au': 'en',
+    'en': 'en',
+    'ja-jp': 'ja',
+    'ja': 'ja',
+    'ar-sa': 'ar',
+    'ar-eg': 'ar',
+    'ar': 'ar',
+    'hi-in': 'hi',
+    'hi': 'hi'
+};
+
+const DEFAULT_LANGUAGE = 'en';
+let currentLanguage = DEFAULT_LANGUAGE;
 
         const FACE_NORMALS = {
             front: [0, 0, 1],
@@ -866,7 +1078,7 @@
             if (y === -1) return 'bottom';
             if (z === 1) return 'front';
             if (z === -1) return 'back';
-            throw new Error('올바르지 않은 노멀입니다: ' + [x, y, z]);
+            throw new Error('Invalid normal vector: ' + [x, y, z]);
         }
 
         class RubiksCube {
@@ -882,7 +1094,7 @@
 
                 this.container = document.getElementById(this.options.containerId);
                 if (!this.container) {
-                    throw new Error('큐브를 렌더링할 컨테이너를 찾을 수 없습니다.');
+                    throw new Error('Unable to locate the container element for cube rendering.');
                 }
 
                 this.scene = null;
@@ -1009,9 +1221,6 @@
                 }, { passive: false });
 
                 document.addEventListener('keydown', event => {
-                    if (state.mode === 'competition' && !state.allowCubeInteraction) {
-                        return;
-                    }
                     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
                         event.preventDefault();
                         switch (event.key) {
@@ -1033,6 +1242,9 @@
 
                     const key = event.key.toLowerCase();
                     const counter = event.shiftKey;
+                    if (state.mode === 'competition' && !state.allowCubeInteraction) {
+                        return;
+                    }
                     const mappedFace = KEY_TO_FACE[key] || CODE_TO_FACE[event.code];
                     if (mappedFace) {
                         this.rotateFace(mappedFace, counter, { source: 'user', recordHistory: true });
@@ -1417,7 +1629,7 @@
         function updateRotationSpeedLabel(ms) {
             const seconds = (ms / 1000).toFixed(2);
             if (ui.rotationSpeedValue) {
-                ui.rotationSpeedValue.textContent = `${seconds}초`;
+                ui.rotationSpeedValue.textContent = `${seconds}${t('speed_unit_suffix')}`;
             }
         }
 
@@ -1425,13 +1637,221 @@
             return window.innerWidth <= MOBILE_BREAKPOINT;
         }
 
-        function showCompetitionOverlay(title, message) {
+        function invertMove(move) {
+            if (!move) return '';
+            return move === move.toUpperCase() ? move.toLowerCase() : move.toUpperCase();
+        }
+
+        function generateSolutionSequence() {
+            const sequence = [];
+            if (state.cube) {
+                const userMoves = state.cube.userHistory ? state.cube.userHistory.slice() : [];
+                if (userMoves.length) {
+                    for (let i = userMoves.length - 1; i >= 0; i--) {
+                        sequence.push(invertMove(userMoves[i]));
+                    }
+                }
+            }
+            if (state.scrambleSequence && state.scrambleSequence.length) {
+                for (let i = state.scrambleSequence.length - 1; i >= 0; i--) {
+                    sequence.push(invertMove(state.scrambleSequence[i]));
+                }
+            }
+            return sequence;
+        }
+
+        function getStringsForLanguage(lang) {
+            if (window.STRINGS && window.STRINGS[lang]) {
+                return window.STRINGS[lang];
+            }
+            return {};
+        }
+
+        function t(key) {
+            const langStrings = getStringsForLanguage(currentLanguage);
+            const value = langStrings[key];
+            if (value && value.length) {
+                return value;
+            }
+            const fallback = DEFAULT_TEXTS[key];
+            if (fallback !== undefined) {
+                return fallback;
+            }
+            return key;
+        }
+
+        function detectLanguage() {
+            try {
+                const saved = localStorage.getItem('cubeLanguage');
+                if (saved && SUPPORTED_LANGUAGES.includes(saved)) {
+                    return saved;
+                }
+            } catch (error) {
+                // ignore storage errors
+            }
+
+            const navigatorLanguage = (navigator.language || navigator.userLanguage || DEFAULT_LANGUAGE).toLowerCase();
+            if (LANGUAGE_ALIASES[navigatorLanguage]) {
+                return LANGUAGE_ALIASES[navigatorLanguage];
+            }
+
+            const shortCode = navigatorLanguage.split('-')[0];
+            if (LANGUAGE_ALIASES[shortCode]) {
+                return LANGUAGE_ALIASES[shortCode];
+            }
+            if (SUPPORTED_LANGUAGES.includes(shortCode)) {
+                return shortCode;
+            }
+            return DEFAULT_LANGUAGE;
+        }
+
+        function populateLanguageSelector() {
+            if (!ui.languageSelect) return;
+            const previousValue = ui.languageSelect.value;
+            ui.languageSelect.innerHTML = '';
+            LANGUAGE_OPTIONS.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = t(option.labelKey);
+                ui.languageSelect.appendChild(opt);
+            });
+            ui.languageSelect.value = currentLanguage;
+        }
+
+        function setLanguage(lang) {
+            if (!SUPPORTED_LANGUAGES.includes(lang)) {
+                lang = DEFAULT_LANGUAGE;
+            }
+            currentLanguage = lang;
+            try {
+                localStorage.setItem('cubeLanguage', lang);
+            } catch (error) {
+                // ignore storage errors
+            }
+            document.documentElement.setAttribute('lang', lang);
+            populateLanguageSelector();
+            applyTranslations();
+        }
+
+        function setElementText(element, key) {
+            if (element) {
+                element.textContent = t(key);
+            }
+        }
+
+        function applyTranslations() {
+            setElementText(document.getElementById('title-main'), 'title_main');
+            setElementText(document.getElementById('subtitle-main'), 'subtitle_main');
+            setElementText(ui.modeButtons.normal, 'mode_normal');
+            setElementText(ui.modeButtons.competition, 'mode_competition');
+            setElementText(document.getElementById('status-label'), 'label_status');
+            setElementText(document.getElementById('moves-label'), 'label_moves');
+            setElementText(document.getElementById('timer-label'), 'label_timer');
+            setElementText(document.getElementById('scramble-label'), 'label_scramble');
+            if (!state.scrambleSequence.length && (!state.solutionSequence.length || !ui.solutionBox || !ui.solutionBox.classList.contains('visible'))) {
+                setElementText(ui.scrambleSequence, 'scramble_placeholder');
+            }
+            setElementText(document.getElementById('rotation-speed-label'), 'speed_label');
+            setElementText(document.getElementById('speed-fast-label'), 'speed_fast');
+            setElementText(document.getElementById('speed-slow-label'), 'speed_slow');
+            setElementText(document.getElementById('language-select-label'), 'language_label');
+            setElementText(document.getElementById('instruction-title'), 'instruction_title');
+            setElementText(document.getElementById('instruction-face'), 'instruction_face_controls');
+            setElementText(document.getElementById('instruction-left'), 'instruction_left_keys');
+            setElementText(document.getElementById('instruction-right'), 'instruction_right_keys');
+            setElementText(document.getElementById('instruction-view'), 'instruction_view');
+            setElementText(document.getElementById('instruction-undo'), 'instruction_undo');
+            setElementText(document.getElementById('instruction-mobile'), 'instruction_mobile');
+            setElementText(document.getElementById('solution-header-text'), 'solution_header');
+            setElementText(ui.solutionApplyBtn, 'solution_apply');
+            setElementText(ui.solutionHideBtn, 'solution_close');
+            if (!state.solutionSequence.length) {
+                setElementText(ui.solutionSequence, 'solution_placeholder');
+            }
+            setElementText(ui.scrambleBtn, 'btn_scramble');
+            setElementText(ui.resetBtn, 'btn_reset');
+            setElementText(ui.undoBtn, 'btn_undo');
+            setElementText(ui.solutionBtn, 'btn_solution');
+            setElementText(ui.competitionHint, 'competition_hint');
+            setElementText(document.getElementById('leaderboard-title'), 'leaderboard_title');
+            setElementText(ui.clearLeaderboard, 'leaderboard_clear');
+            populateLanguageSelector();
+            updateRotationSpeedLabel(state.rotationDuration);
+            applyModeUI();
+            renderLeaderboard();
+            syncMobileMenuButton();
+            refreshCompetitionOverlay();
+        }
+
+        function refreshCompetitionOverlay() {
+            if (!ui.competitionOverlay || !ui.competitionOverlay.classList.contains('visible')) return;
+            if (state.competition.phase === 'inspection') {
+                const messageKey = state.competition.penalty === 2 ? 'overlay_inspection_penalty_message' : 'overlay_inspection_message';
+                setCompetitionOverlay(t('overlay_inspection_title'), t(messageKey), {
+                    inspection: true,
+                    titleKey: 'overlay_inspection_title',
+                    messageKey,
+                    keepTimer: true
+                });
+                return;
+            }
+            const overlay = state.competition.lastOverlay;
+            if (!overlay) return;
+            if (overlay.customData && overlay.customData.type === 'result') {
+                const { timeMs, penalty } = overlay.customData;
+                const resultMessage = `${t('overlay_result_message_prefix')} ${formatTime(timeMs)}${penalty === 2 ? ` ${t('overlay_result_penalty_suffix')}` : ''}`;
+                setCompetitionOverlay(t('overlay_result_title'), resultMessage, {
+                    inspection: overlay.inspection,
+                    custom: true,
+                    customData: overlay.customData
+                });
+            } else if (overlay.titleKey && overlay.messageKey) {
+                setCompetitionOverlay(t(overlay.titleKey), t(overlay.messageKey), {
+                    inspection: overlay.inspection,
+                    titleKey: overlay.titleKey,
+                    messageKey: overlay.messageKey
+                });
+            } else if (overlay.customTitle || overlay.customMessage) {
+                setCompetitionOverlay(overlay.customTitle || '', overlay.customMessage || '', {
+                    inspection: overlay.inspection,
+                    custom: true,
+                    customData: overlay.customData || null
+                });
+            }
+        }
+
+        function setCompetitionOverlay(title, message, options = {}) {
             if (!ui.competitionOverlay) return;
+            const { inspection = false, titleKey = null, messageKey = null, keepTimer = false, custom = false, customData = null } = options;
             ui.competitionOverlay.classList.add('visible');
-            ui.competitionOverlay.classList.remove('inspection');
+            ui.competitionOverlay.classList.toggle('inspection', inspection);
             if (ui.competitionOverlayTitle) ui.competitionOverlayTitle.textContent = title;
             if (ui.competitionOverlayMessage) ui.competitionOverlayMessage.textContent = message;
-            if (ui.inspectionTimer) ui.inspectionTimer.textContent = '';
+            if (ui.inspectionTimer && !inspection && !keepTimer) ui.inspectionTimer.textContent = '';
+            state.competition.lastOverlay = {
+                inspection,
+                titleKey,
+                messageKey,
+                customTitle: custom ? title : null,
+                customMessage: custom ? message : null,
+                customData
+            };
+        }
+
+        function showOverlayKeys(titleKey, messageKey, options = {}) {
+            setCompetitionOverlay(t(titleKey), t(messageKey), {
+                ...options,
+                titleKey,
+                messageKey,
+                custom: false
+            });
+        }
+
+        function showOverlayCustom(title, message, options = {}) {
+            setCompetitionOverlay(title, message, {
+                ...options,
+                custom: true
+            });
         }
 
         function hideCompetitionOverlay() {
@@ -1439,12 +1859,13 @@
             ui.competitionOverlay.classList.remove('visible');
             ui.competitionOverlay.classList.remove('inspection');
             if (ui.inspectionTimer) ui.inspectionTimer.textContent = '';
+            state.competition.lastOverlay = null;
         }
 
         function updateInspectionTimerDisplay(remainingSeconds) {
             if (!ui.inspectionTimer) return;
             const value = Math.max(0, remainingSeconds);
-            ui.inspectionTimer.textContent = value.toFixed(2) + '초';
+            ui.inspectionTimer.textContent = value.toFixed(2) + t('inspection_timer_suffix');
         }
 
         function syncMobileMenuButton() {
@@ -1452,7 +1873,7 @@
             const expanded = document.body.classList.contains('mobile-menu-open');
             ui.mobileMenuToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
             ui.mobileMenuToggle.dataset.expanded = expanded ? 'true' : 'false';
-            ui.mobileMenuToggle.textContent = expanded ? '메뉴 닫기' : '메뉴 열기';
+            ui.mobileMenuToggle.textContent = expanded ? t('menu_close') : t('menu_open');
         }
 
         function toggleMobileMenu(force) {
@@ -1486,15 +1907,21 @@
             scrambleBtn: document.getElementById('scramble-btn'),
             resetBtn: document.getElementById('reset-btn'),
             undoBtn: document.getElementById('undo-btn'),
+            solutionBtn: document.getElementById('solution-btn'),
             clearLeaderboard: document.getElementById('clear-leaderboard'),
             rotationSlider: document.getElementById('rotation-speed'),
             rotationSpeedValue: document.getElementById('rotation-speed-value'),
+            languageSelect: document.getElementById('language-select'),
             mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
             mobileFaceControls: document.getElementById('mobile-face-controls'),
             competitionOverlay: document.getElementById('competition-overlay'),
             competitionOverlayTitle: document.getElementById('competition-overlay-title'),
             competitionOverlayMessage: document.getElementById('competition-overlay-message'),
             inspectionTimer: document.getElementById('inspection-timer'),
+            solutionBox: document.getElementById('solution-box'),
+            solutionSequence: document.getElementById('solution-sequence'),
+            solutionApplyBtn: document.getElementById('solution-apply-btn'),
+            solutionHideBtn: document.getElementById('solution-hide-btn'),
             modeButtons: {
                 normal: document.getElementById('mode-normal'),
                 competition: document.getElementById('mode-competition')
@@ -1522,8 +1949,10 @@
                 inspectionTimer: null,
                 holdStart: null,
                 inspectionStart: null,
-                inspectionElapsed: 0
-            }
+                inspectionElapsed: 0,
+                lastOverlay: null
+            },
+            solutionSequence: []
         };
 
         let viewGuideButtons = [];
@@ -1560,7 +1989,7 @@
                     button.style.top = `${y}px`;
                     button.dataset.row = String(row);
                     button.dataset.col = String(col);
-                    button.setAttribute('aria-label', row === 0 ? `상단 시점 ${col + 1}` : `하단 시점 ${col + 1}`);
+                    button.setAttribute('aria-label', row === 0 ? `Top view ${col + 1}` : `Bottom view ${col + 1}`);
                     button.setAttribute('aria-pressed', 'false');
                     button.addEventListener('click', () => {
                         if (!state.cube) return;
@@ -1592,7 +2021,7 @@
                     return parsed;
                 }
             } catch (error) {
-                console.warn('리더보드 데이터를 불러오지 못했습니다.', error);
+                console.warn('Unable to load leaderboard data.', error);
             }
             return [];
         }
@@ -1605,7 +2034,7 @@
             ui.leaderboardList.innerHTML = '';
             if (!state.leaderboard.length) {
                 const empty = document.createElement('li');
-                empty.textContent = '기록이 없습니다.';
+                empty.textContent = t('leaderboard_empty');
                 empty.style.color = 'rgba(220,220,220,0.6)';
                 ui.leaderboardList.appendChild(empty);
                 ui.leaderboardPanel.classList.remove('visible');
@@ -1618,11 +2047,11 @@
 
                 const title = document.createElement('strong');
                 if (entry.dnf) {
-                    title.textContent = `${index + 1}. DNF`;
+                    title.textContent = `${index + 1}. ${t('dnf_label')}`;
                 } else {
                     let label = `${index + 1}. ${formatTime(entry.timeMs)}`;
                     if (entry.penalty === 2) {
-                        label += ' (+2)';
+                        label += ` ${t('overlay_result_penalty_suffix')}`;
                     }
                     title.textContent = label;
                 }
@@ -1630,9 +2059,9 @@
                 const meta = document.createElement('div');
                 meta.className = 'leaderboard-meta';
                 meta.innerHTML = [
-                    `Moves ${entry.moves}`,
-                    entry.penalty === 2 ? 'Inspection Penalty: +2' : '',
-                    entry.scramble ? `Scramble: ${entry.scramble}` : '',
+                    `${t('meta_moves_prefix')}${entry.moves}`,
+                    entry.penalty === 2 ? t('meta_penalty') : '',
+                    entry.scramble ? `${t('meta_scramble_prefix')}${entry.scramble}` : '',
                     entry.date
                 ].filter(Boolean).join('<br>');
 
@@ -1642,6 +2071,56 @@
             });
 
             ui.leaderboardPanel.classList.add('visible');
+        }
+
+        function showSolutionPanel() {
+            if (state.mode === 'competition') {
+                showOverlayKeys('overlay_solution_disabled_title', 'overlay_solution_disabled_message');
+                setTimeout(() => {
+                    if (state.mode === 'competition' && state.competition.phase === 'covered') {
+                        showOverlayKeys('overlay_ready_title', 'overlay_ready_message');
+                    }
+                }, 2000);
+                return;
+            }
+            if (!state.cube) return;
+            const sequence = generateSolutionSequence();
+            state.solutionSequence = sequence;
+            if (ui.solutionSequence) {
+                ui.solutionSequence.textContent = sequence.length
+                    ? sequence.join(' ')
+                    : t('solution_already_solved');
+            }
+            if (ui.solutionBox) {
+                ui.solutionBox.classList.add('visible');
+            }
+        }
+
+        function hideSolutionPanel() {
+            if (ui.solutionBox) {
+                ui.solutionBox.classList.remove('visible');
+            }
+            state.solutionSequence = [];
+            if (ui.solutionSequence) {
+                ui.solutionSequence.textContent = t('solution_placeholder');
+            }
+        }
+
+        function applySolutionSequence() {
+            if (!state.cube || !state.solutionSequence.length) return;
+            const sequence = state.solutionSequence.slice();
+            state.allowCubeInteraction = false;
+            ui.solutionSequence.textContent = t('solution_processing');
+            state.cube.executeMovesSequence(sequence, { recordHistory: false, source: 'solution' }).then(() => {
+                state.cube.clearUserHistory();
+                state.scrambleSequence = [];
+                state.solutionSequence = [];
+                state.allowCubeInteraction = state.mode === 'competition' ? false : true;
+                hideSolutionPanel();
+                ui.scrambleSequence.textContent = t('solution_applied_message');
+                ui.scrambleLength.textContent = '-';
+                state.cube.emitStateChange({ source: 'solution' });
+            });
         }
 
         function clearCompetitionTimers() {
@@ -1663,6 +2142,7 @@
             state.competition.holdStart = null;
             state.competition.inspectionStart = null;
             state.competition.inspectionElapsed = 0;
+            state.competition.lastOverlay = null;
             updateInspectionTimerDisplay(0);
         }
 
@@ -1672,27 +2152,30 @@
             state.allowCubeInteraction = false;
             state.attemptActive = false;
             state.competition.phase = 'preparing';
+            hideSolutionPanel();
+            state.solutionSequence = [];
             stopTimer();
             ui.timerDisplay.textContent = '00:00.00';
             ui.moveCount.textContent = '0';
             if (state.isMobile) {
                 toggleMobileMenu(false);
             }
-            showCompetitionOverlay('대회 준비 중', '큐브를 섞는 중입니다.');
+            showOverlayKeys('overlay_prepare_title', 'overlay_prepare_message');
             const scrambleLength = 25;
             state.cube.resetOrientation();
             state.cube.shuffle(scrambleLength).then(sequence => {
                 state.scrambleSequence = sequence;
-                ui.scrambleLength.textContent = `${sequence.length} 수`;
+                ui.scrambleLength.textContent = String(sequence.length);
                 ui.scrambleSequence.textContent = sequence.join(' ');
                 state.cube.clearUserHistory();
                 state.competition.phase = 'covered';
-                showCompetitionOverlay('대회 준비 완료', '스페이스바를 2초 동안 누르면 15초 동안 큐브를 확인할 수 있습니다.');
+                showOverlayKeys('overlay_ready_title', 'overlay_ready_message');
                 updateInspectionTimerDisplay(0);
-                ui.statusText.textContent = '대회 준비';
+                ui.statusText.textContent = t('status_preparing');
             }).catch(() => {
-                showCompetitionOverlay('섞기 실패', '다시 시도하려면 스페이스바를 누르세요.');
+                showOverlayKeys('overlay_shuffle_failed_title', 'overlay_shuffle_failed_message');
                 state.competition.phase = 'covered';
+                ui.statusText.textContent = t('status_failed');
             });
         }
 
@@ -1701,9 +2184,9 @@
             state.allowCubeInteraction = false;
             state.competition.phase = 'hold';
             state.competition.holdStart = Date.now();
-            showCompetitionOverlay('준비 중', '스페이스바를 2초 동안 눌러주세요.');
+            showOverlayKeys('overlay_hold_title', 'overlay_hold_message');
             updateInspectionTimerDisplay(0);
-            ui.statusText.textContent = '준비 중 (홀드)';
+            ui.statusText.textContent = t('status_hold');
             clearCompetitionTimers();
             state.competition.holdTimeout = setTimeout(() => {
                 if (state.competition.phase === 'hold') {
@@ -1717,7 +2200,7 @@
             state.competition.penalty = 0;
             state.competition.phase = 'covered';
             hideCompetitionOverlay();
-            showCompetitionOverlay('다시 시도', '스페이스바를 2초 동안 누르고 있으세요.');
+            showOverlayKeys('overlay_retry_title', 'overlay_retry_message');
         }
 
         function beginInspectionPhase() {
@@ -1726,14 +2209,9 @@
             state.competition.dnf = false;
             state.competition.inspectionStart = Date.now();
             state.competition.inspectionElapsed = 0;
-            if (ui.competitionOverlay) {
-                ui.competitionOverlay.classList.add('visible');
-                ui.competitionOverlay.classList.add('inspection');
-                ui.competitionOverlayTitle.textContent = '검사 중';
-                ui.competitionOverlayMessage.textContent = '15초 안에 큐브를 확인하고 스페이스바를 놓으세요.';
-            }
+            showOverlayKeys('overlay_inspection_title', 'overlay_inspection_message', { inspection: true, keepTimer: true });
             updateInspectionTimerDisplay(15);
-            ui.statusText.textContent = '검사 중';
+            ui.statusText.textContent = t('status_inspecting');
             state.competition.inspectionTimer = setInterval(() => {
                 const now = Date.now();
                 const elapsed = now - state.competition.inspectionStart;
@@ -1745,9 +2223,7 @@
                     failCompetitionAttempt('inspection');
                 } else if (elapsed > 15000) {
                     state.competition.penalty = 2;
-                    if (ui.competitionOverlayMessage) {
-                        ui.competitionOverlayMessage.textContent = '15초 초과 (+2초 패널티). 17초 전에 시작하세요!';
-                    }
+                    showOverlayKeys('overlay_inspection_title', 'overlay_inspection_penalty_message', { inspection: true, keepTimer: true });
                 }
             }, 50);
         }
@@ -1763,7 +2239,7 @@
             state.competition.phase = 'solving';
             state.timerRunning = false;
             startTimer();
-            ui.statusText.textContent = '솔빙 중';
+            ui.statusText.textContent = t('status_solving');
         }
 
         function failCompetitionAttempt(reason) {
@@ -1772,9 +2248,10 @@
             state.attemptActive = false;
             state.competition.phase = 'failed';
             state.competition.dnf = true;
-            showCompetitionOverlay('도전 실패', reason === 'inspection' ? '17초를 초과했습니다.' : '조건을 만족하지 못했습니다.');
-            ui.statusText.textContent = '도전 실패';
-            ui.timerDisplay.textContent = 'DNF';
+            const messageKey = reason === 'inspection' ? 'overlay_fail_timeout_message' : 'overlay_fail_general_message';
+            showOverlayKeys('overlay_fail_title', messageKey);
+            ui.statusText.textContent = t('status_failed');
+            ui.timerDisplay.textContent = t('dnf_label');
             setTimeout(() => {
                 if (state.mode === 'competition') {
                     prepareCompetitionRound();
@@ -1818,6 +2295,7 @@
         }
 
         function setMode(mode) {
+            hideSolutionPanel();
             state.mode = mode;
             ui.modeButtons.normal.classList.toggle('active', mode === 'normal');
             ui.modeButtons.competition.classList.toggle('active', mode === 'competition');
@@ -1844,17 +2322,19 @@
                 state.attemptActive = false;
                 ui.timerDisplay.textContent = '00:00.00';
                 if (state.cube && state.cube.isSolved()) {
-                    ui.statusText.textContent = '완료';
+                    ui.statusText.textContent = t('status_complete');
                 } else {
-                    ui.statusText.textContent = '진행 중';
+                    ui.statusText.textContent = t('status_in_progress');
                 }
+                if (ui.solutionBtn) ui.solutionBtn.disabled = false;
             } else {
                 if (!state.timerRunning) {
                     ui.timerDisplay.textContent = '00:00.00';
                 }
                 if (!state.attemptActive) {
-                    ui.statusText.textContent = '대회 준비';
+                    ui.statusText.textContent = t('status_preparing');
                 }
+                if (ui.solutionBtn) ui.solutionBtn.disabled = true;
             }
         }
 
@@ -1886,31 +2366,31 @@
             if (state.mode === 'competition') {
                 switch (state.competition.phase) {
                     case 'covered':
-                        ui.statusText.textContent = '대회 준비';
+                        ui.statusText.textContent = t('status_preparing');
                         break;
                     case 'hold':
-                        ui.statusText.textContent = '준비 중 (홀드)';
+                        ui.statusText.textContent = t('status_hold');
                         break;
                     case 'inspection':
-                        ui.statusText.textContent = '검사 중';
+                        ui.statusText.textContent = t('status_inspecting');
                         break;
                     case 'solving':
-                        ui.statusText.textContent = '솔빙 중';
+                        ui.statusText.textContent = t('status_solving');
                         break;
                     case 'failed':
-                        ui.statusText.textContent = '도전 실패';
+                        ui.statusText.textContent = t('status_failed');
                         break;
                     default:
-                        ui.statusText.textContent = event.solved ? '대회 준비' : '진행 중';
+                        ui.statusText.textContent = event.solved ? t('status_preparing') : t('status_in_progress');
                         break;
                 }
             } else {
-                ui.statusText.textContent = event.solved ? '완료' : '진행 중';
+                ui.statusText.textContent = event.solved ? t('status_complete') : t('status_in_progress');
             }
             ui.moveCount.textContent = event.moves;
 
             if (event.source === 'scramble') {
-                ui.scrambleLength.textContent = `${state.scrambleSequence.length} 수`;
+                ui.scrambleLength.textContent = String(state.scrambleSequence.length);
                 ui.scrambleSequence.textContent = state.scrambleSequence.join(' ');
             }
 
@@ -1928,7 +2408,7 @@
 
         function handleCubeUnsolved() {
             if (state.mode === 'competition' && state.attemptActive) {
-                ui.statusText.textContent = '진행 중';
+                ui.statusText.textContent = t('status_in_progress');
             }
         }
 
@@ -1945,10 +2425,9 @@
                 let finalTimeMs = state.lastKnownMs;
                 if (state.competition.penalty === 2) {
                     finalTimeMs += 2000;
-                }
-
-                if (state.competition.penalty === 2) {
-                    ui.timerDisplay.textContent = formatTime(finalTimeMs) + ' (+2)';
+                    ui.timerDisplay.textContent = `${formatTime(finalTimeMs)}${t('timer_penalty_suffix')}`;
+                } else {
+                    ui.timerDisplay.textContent = formatTime(finalTimeMs);
                 }
 
                 const entry = {
@@ -1967,18 +2446,25 @@
                 persistLeaderboard();
                 renderLeaderboard();
 
-                showCompetitionOverlay('기록 저장', `이번 기록: ${formatTime(finalTimeMs)}${state.competition.penalty === 2 ? ' (+2)' : ''}`);
+                const resultMessage = `${t('overlay_result_message_prefix')} ${formatTime(finalTimeMs)}${state.competition.penalty === 2 ? ` ${t('overlay_result_penalty_suffix')}` : ''}`;
+                showOverlayCustom(t('overlay_result_title'), resultMessage, {
+                    customData: {
+                        type: 'result',
+                        timeMs: finalTimeMs,
+                        penalty: state.competition.penalty
+                    }
+                });
                 setTimeout(() => {
                     hideCompetitionOverlay();
                     if (state.mode === 'competition') {
                         prepareCompetitionRound();
                     }
                 }, 3000);
-                ui.statusText.textContent = '대회 준비';
+                ui.statusText.textContent = t('status_preparing');
                 return;
             }
 
-            ui.statusText.textContent = '완료';
+            ui.statusText.textContent = t('status_complete');
         }
 
         function handleRotationSpeedChange(event) {
@@ -1996,10 +2482,12 @@
 
         function handleScramble() {
             if (!state.cube) return;
+            hideSolutionPanel();
+            state.solutionSequence = [];
             if (state.isMobile) toggleMobileMenu(false);
             setControlsDisabled(true);
-            ui.statusText.textContent = '섞는 중...';
-            ui.scrambleSequence.textContent = '스크램블 중입니다...';
+            ui.statusText.textContent = t('status_preparing');
+            ui.scrambleSequence.textContent = t('scramble_in_progress');
 
             const scrambleLength = state.mode === 'competition' ? 25 : 20;
 
@@ -2007,9 +2495,9 @@
             state.cube.shuffle(scrambleLength).then(sequence => {
                 state.scrambleSequence = sequence;
                 state.cube.clearUserHistory();
-                ui.scrambleLength.textContent = `${sequence.length} 수`;
+                ui.scrambleLength.textContent = String(sequence.length);
                 ui.scrambleSequence.textContent = sequence.join(' ');
-                ui.statusText.textContent = state.mode === 'competition' ? '준비 완료' : '섞기 완료';
+                ui.statusText.textContent = state.mode === 'competition' ? t('status_preparing') : t('status_in_progress');
                 setControlsDisabled(false);
 
                 if (state.mode === 'competition') {
@@ -2022,7 +2510,7 @@
                     ui.moveCount.textContent = '0';
                 }
             }).catch(() => {
-                ui.statusText.textContent = '섞기 실패';
+                ui.statusText.textContent = t('status_failed');
                 setControlsDisabled(false);
             });
         }
@@ -2030,17 +2518,22 @@
         function handleReset() {
             if (!state.cube) return;
             if (state.isMobile) toggleMobileMenu(false);
+            hideCompetitionOverlay();
+            resetCompetitionState();
+            hideSolutionPanel();
+            state.solutionSequence = [];
             stopTimer();
             state.lastKnownMs = 0;
             ui.timerDisplay.textContent = '00:00.00';
             state.scrambleSequence = [];
-            ui.scrambleSequence.textContent = '스크램블을 실행하면 수열이 표시됩니다.';
+            ui.scrambleSequence.textContent = t('scramble_placeholder');
             ui.scrambleLength.textContent = '-';
             state.attemptActive = false;
             state.cube.reset().then(() => {
                 ui.moveCount.textContent = '0';
-                ui.statusText.textContent = '완료';
+                ui.statusText.textContent = t('status_complete');
                 setControlsDisabled(false);
+                state.allowCubeInteraction = true;
             });
         }
 
@@ -2089,6 +2582,20 @@
                 ui.mobileMenuToggle.addEventListener('click', () => toggleMobileMenu());
             }
 
+            if (ui.solutionBtn) {
+                ui.solutionBtn.addEventListener('click', showSolutionPanel);
+            }
+            if (ui.solutionHideBtn) {
+                ui.solutionHideBtn.addEventListener('click', hideSolutionPanel);
+            }
+            if (ui.solutionApplyBtn) {
+                ui.solutionApplyBtn.addEventListener('click', applySolutionSequence);
+            }
+
+            if (ui.languageSelect) {
+                ui.languageSelect.addEventListener('change', event => setLanguage(event.target.value));
+            }
+
             document.addEventListener('keydown', event => {
                 if (event.code === 'Space') {
                     event.preventDefault();
@@ -2105,6 +2612,7 @@
         }
 
         function initialize() {
+            currentLanguage = detectLanguage();
             state.cube = new RubiksCube({
                 onStateChange: handleCubeStateChange,
                 onMove: handleCubeMove,
@@ -2121,13 +2629,13 @@
             updateRotationSpeedLabel(state.rotationDuration);
             updateResponsiveUI();
             renderLeaderboard();
-            setMode('normal');
             bindEvents();
-            ui.statusText.textContent = '완료';
+            setLanguage(currentLanguage);
+            setMode('normal');
         }
 
         if (typeof THREE === 'undefined') {
-            console.error('three.js를 불러오지 못했습니다. CDN 연결을 확인하세요.');
+            console.error('Failed to load three.js. Please check the CDN connection.');
         } else {
             window.addEventListener('load', initialize);
             window.addEventListener('resize', updateResponsiveUI);
