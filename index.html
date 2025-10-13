@@ -152,6 +152,77 @@
             color: rgba(255, 255, 255, 0.95);
         }
 
+        .keyboard-visual {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 16px 0 8px 0;
+            flex-wrap: wrap;
+        }
+
+        .keyboard-hand {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .keyboard-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 4px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .key {
+            width: 42px;
+            height: 42px;
+            border-radius: 6px;
+            background: linear-gradient(145deg, rgba(60, 70, 100, 0.5), rgba(40, 50, 80, 0.6));
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+
+        .key:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .key-letter {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .key-face {
+            font-size: 10px;
+            color: rgba(180, 200, 255, 0.85);
+        }
+
+        .key.clockwise {
+            background: linear-gradient(145deg, rgba(100, 180, 255, 0.3), rgba(70, 140, 220, 0.4));
+            border-color: rgba(100, 180, 255, 0.4);
+        }
+
+        .key.counter-clockwise {
+            background: linear-gradient(145deg, rgba(255, 150, 100, 0.3), rgba(220, 120, 80, 0.4));
+            border-color: rgba(255, 150, 100, 0.4);
+        }
+
         .solution-box {
             margin-top: 16px;
             padding: 14px 16px;
@@ -462,6 +533,12 @@
             background: rgba(15, 19, 32, 0.65);
         }
 
+        #competition-overlay.inspection .competition-overlay-box h2,
+        #competition-overlay.inspection .competition-overlay-box p {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
         .competition-overlay-box {
             max-width: 480px;
             width: 100%;
@@ -491,6 +568,22 @@
             font-weight: 700;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.04em;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #competition-overlay.inspection #inspection-timer {
+            position: fixed;
+            top: 10px;
+            right: calc(100% - 340px);
+            margin-top: 0;
+            font-size: 18px;
+            background: rgba(15, 19, 32, 0.9);
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            z-index: 10;
         }
 
         .controls {
@@ -726,6 +819,73 @@
 
             <div class="instruction-block">
                 <strong id="instruction-title">Keyboard Shortcuts</strong>
+
+                <div class="keyboard-visual">
+                    <div class="keyboard-hand">
+                        <div class="keyboard-label">← Left Hand (Clockwise)</div>
+                        <div class="keyboard-row">
+                            <div class="key clockwise">
+                                <div class="key-letter">Q</div>
+                                <div class="key-face">L</div>
+                            </div>
+                            <div class="key clockwise">
+                                <div class="key-letter">W</div>
+                                <div class="key-face">U</div>
+                            </div>
+                            <div class="key clockwise">
+                                <div class="key-letter">E</div>
+                                <div class="key-face">R</div>
+                            </div>
+                        </div>
+                        <div class="keyboard-row">
+                            <div class="key clockwise">
+                                <div class="key-letter">A</div>
+                                <div class="key-face">F</div>
+                            </div>
+                            <div class="key clockwise">
+                                <div class="key-letter">S</div>
+                                <div class="key-face">D</div>
+                            </div>
+                            <div class="key clockwise">
+                                <div class="key-letter">D</div>
+                                <div class="key-face">B</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="keyboard-hand">
+                        <div class="keyboard-label">Right Hand (Counter-clockwise) →</div>
+                        <div class="keyboard-row">
+                            <div class="key counter-clockwise">
+                                <div class="key-letter">U</div>
+                                <div class="key-face">L'</div>
+                            </div>
+                            <div class="key counter-clockwise">
+                                <div class="key-letter">I</div>
+                                <div class="key-face">U'</div>
+                            </div>
+                            <div class="key counter-clockwise">
+                                <div class="key-letter">O</div>
+                                <div class="key-face">R'</div>
+                            </div>
+                        </div>
+                        <div class="keyboard-row">
+                            <div class="key counter-clockwise">
+                                <div class="key-letter">J</div>
+                                <div class="key-face">F'</div>
+                            </div>
+                            <div class="key counter-clockwise">
+                                <div class="key-letter">K</div>
+                                <div class="key-face">D'</div>
+                            </div>
+                            <div class="key counter-clockwise">
+                                <div class="key-letter">L</div>
+                                <div class="key-face">B'</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="instruction-face">Cube faces: F / R / U / L / B / D (Shift = counter-clockwise)</div>
                 <div id="instruction-left">Left hand helper keys: Q W E / A S D / Z X C</div>
                 <div id="instruction-right">Right hand helper keys: } { ㅖ / " : ㅣ / ? > &lt; (Shift = counter-clockwise)</div>
@@ -815,6 +975,62 @@
             K: 0x1b1d26
         };
 
+        const FACE_LABELS = {
+            R: 'F',
+            B: 'R',
+            O: 'B',
+            G: 'L',
+            W: 'U',
+            Y: 'D',
+            K: ''
+        };
+
+        function createTextTexture(text, bgColor, showArrow = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = '#' + bgColor.toString(16).padStart(6, '0');
+            ctx.fillRect(0, 0, 256, 256);
+
+            // Text
+            if (text) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+                ctx.font = 'bold 100px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, 128, 128);
+            }
+
+            // Rotation arrow (clockwise)
+            if (showArrow && text) {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                // Draw curved arrow (clockwise)
+                ctx.beginPath();
+                ctx.arc(128, 128, 70, -Math.PI * 0.7, Math.PI * 0.5, false);
+                ctx.stroke();
+
+                // Arrow head
+                ctx.beginPath();
+                ctx.moveTo(128 + 70 * Math.cos(Math.PI * 0.5), 128 + 70 * Math.sin(Math.PI * 0.5));
+                ctx.lineTo(128 + 70 * Math.cos(Math.PI * 0.5) - 15, 128 + 70 * Math.sin(Math.PI * 0.5) + 20);
+                ctx.lineTo(128 + 70 * Math.cos(Math.PI * 0.5) + 15, 128 + 70 * Math.sin(Math.PI * 0.5) + 15);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.fill();
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
         const VIEW_YAWS = Array.from({ length: 8 }, (_, index) => (Math.PI / 4) * index + (Math.PI / 4));
 
         const VIEW_ELEVATIONS = [Math.PI / 6, -Math.PI / 6];
@@ -823,48 +1039,42 @@
         const MOBILE_VIEW_RADIUS = 9.8;
         const MOBILE_BREAKPOINT = 768;
 
-        const BASE_KEY_TO_FACE = {
-            f: 'F',
-            r: 'R',
-            u: 'U',
-            l: 'L',
-            b: 'B',
-            d: 'D'
+        // Keyboard mapping
+        // Left hand (QWEASD): Q=L, W=U, E=R, A=F, S=D, D=B (Clockwise)
+        // Right hand (UIOJKL): U=L', I=U', O=R', J=F', K=D', L=B' (Counter-clockwise)
+        const KEY_MAPPING = {
+            // Clockwise keys (Left hand)
+            q: { face: 'L', counter: false },
+            w: { face: 'U', counter: false },
+            e: { face: 'R', counter: false },
+            a: { face: 'F', counter: false },
+            s: { face: 'D', counter: false },
+            d: { face: 'B', counter: false },
+            // Counter-clockwise keys (Right hand)
+            u: { face: 'L', counter: true },
+            i: { face: 'U', counter: true },
+            o: { face: 'R', counter: true },
+            j: { face: 'F', counter: true },
+            k: { face: 'D', counter: true },
+            l: { face: 'B', counter: true }
         };
 
-        const LEFT_HAND_KEYS = ['q', 'w', 'e', 'a', 's', 'd', 'z', 'x', 'c'];
-        const RIGHT_HAND_KEYS = ['}', '{', 'ㅖ', '"', ':', 'ㅣ', '?', '>', '<'];
-        const RIGHT_HAND_ALT_KEYS = [']', '[', '\\', ';', "'", '/', '.', ','];
-        const FACE_SEQUENCE = ['L', 'U', 'R', 'F', 'D', 'B', 'L', 'D', 'R'];
-
-        const KEY_TO_FACE = Object.assign({}, BASE_KEY_TO_FACE);
-        LEFT_HAND_KEYS.forEach((key, index) => {
-            KEY_TO_FACE[key] = FACE_SEQUENCE[index];
-        });
-        RIGHT_HAND_KEYS.forEach((key, index) => {
-            KEY_TO_FACE[key] = FACE_SEQUENCE[index];
-        });
-        RIGHT_HAND_ALT_KEYS.forEach((key, index) => {
-            KEY_TO_FACE[key] = FACE_SEQUENCE[index];
-        });
-
-        const CODE_TO_FACE = {
-            KeyF: 'F',
-            KeyR: 'R',
-            KeyU: 'U',
-            KeyL: 'L',
-            KeyB: 'B'
+        const CODE_MAPPING = {
+            // Clockwise codes
+            KeyQ: { face: 'L', counter: false },
+            KeyW: { face: 'U', counter: false },
+            KeyE: { face: 'R', counter: false },
+            KeyA: { face: 'F', counter: false },
+            KeyS: { face: 'D', counter: false },
+            KeyD: { face: 'B', counter: false },
+            // Counter-clockwise codes
+            KeyU: { face: 'L', counter: true },
+            KeyI: { face: 'U', counter: true },
+            KeyO: { face: 'R', counter: true },
+            KeyJ: { face: 'F', counter: true },
+            KeyK: { face: 'D', counter: true },
+            KeyL: { face: 'B', counter: true }
         };
-
-        const LEFT_HAND_CODES = ['KeyQ', 'KeyW', 'KeyE', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyX', 'KeyC'];
-const RIGHT_HAND_CODES = ['BracketRight', 'BracketLeft', 'Backslash', 'Quote', 'Semicolon', 'KeyL', 'Slash', 'Period', 'Comma'];
-
-LEFT_HAND_CODES.forEach((code, index) => {
-    CODE_TO_FACE[code] = FACE_SEQUENCE[index];
-});
-RIGHT_HAND_CODES.forEach((code, index) => {
-    CODE_TO_FACE[code] = FACE_SEQUENCE[index];
-});
 
 const DEFAULT_TEXTS = {
     title_main: '3D Cube Station',
@@ -1142,10 +1352,10 @@ let currentLanguage = DEFAULT_LANGUAGE;
                 this.container.innerHTML = '';
                 this.container.appendChild(this.renderer.domElement);
 
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                const ambientLight = new THREE.AmbientLight(0xffffff, 1.04);
                 this.scene.add(ambientLight);
 
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.3);
                 directionalLight.position.set(10, 12, 8);
                 directionalLight.castShadow = true;
                 this.scene.add(directionalLight);
@@ -1184,17 +1394,31 @@ let currentLanguage = DEFAULT_LANGUAGE;
                 const geometry = new THREE.BoxGeometry(1, 1, 1);
                 const materials = [];
 
+                // Determine if this is a center piece for each face
+                const isCenterRight = (x === 1 && y === 0 && z === 0);
+                const isCenterLeft = (x === -1 && y === 0 && z === 0);
+                const isCenterTop = (y === 1 && x === 0 && z === 0);
+                const isCenterBottom = (y === -1 && x === 0 && z === 0);
+                const isCenterFront = (z === 1 && x === 0 && y === 0);
+                const isCenterBack = (z === -1 && x === 0 && y === 0);
+
                 const faces = [
-                    x === 1 ? FACE_COLORS.right : 'K',
-                    x === -1 ? FACE_COLORS.left : 'K',
-                    y === 1 ? FACE_COLORS.top : 'K',
-                    y === -1 ? FACE_COLORS.bottom : 'K',
-                    z === 1 ? FACE_COLORS.front : 'K',
-                    z === -1 ? FACE_COLORS.back : 'K'
+                    { code: x === 1 ? FACE_COLORS.right : 'K', isCenter: isCenterRight },
+                    { code: x === -1 ? FACE_COLORS.left : 'K', isCenter: isCenterLeft },
+                    { code: y === 1 ? FACE_COLORS.top : 'K', isCenter: isCenterTop },
+                    { code: y === -1 ? FACE_COLORS.bottom : 'K', isCenter: isCenterBottom },
+                    { code: z === 1 ? FACE_COLORS.front : 'K', isCenter: isCenterFront },
+                    { code: z === -1 ? FACE_COLORS.back : 'K', isCenter: isCenterBack }
                 ];
 
-                faces.forEach(code => {
-                    materials.push(new THREE.MeshLambertMaterial({ color: COLOR_MATERIALS[code] }));
+                faces.forEach(face => {
+                    const showLabel = face.isCenter && face.code !== 'K';
+                    const label = showLabel ? FACE_LABELS[face.code] : '';
+                    const texture = createTextTexture(label, COLOR_MATERIALS[face.code], showLabel);
+                    materials.push(new THREE.MeshLambertMaterial({
+                        map: texture,
+                        color: 0xffffff
+                    }));
                 });
 
                 const cubelet = new THREE.Mesh(geometry, materials);
@@ -1241,13 +1465,14 @@ let currentLanguage = DEFAULT_LANGUAGE;
                     }
 
                     const key = event.key.toLowerCase();
-                    const counter = event.shiftKey;
                     if (state.mode === 'competition' && !state.allowCubeInteraction) {
                         return;
                     }
-                    const mappedFace = KEY_TO_FACE[key] || CODE_TO_FACE[event.code];
-                    if (mappedFace) {
-                        this.rotateFace(mappedFace, counter, { source: 'user', recordHistory: true });
+
+                    // Check key mapping
+                    const mapping = KEY_MAPPING[key] || CODE_MAPPING[event.code];
+                    if (mapping) {
+                        this.rotateFace(mapping.face, mapping.counter, { source: 'user', recordHistory: true });
                     }
                 });
             }
@@ -1301,7 +1526,12 @@ let currentLanguage = DEFAULT_LANGUAGE;
                 const cols = VIEW_YAWS.length;
 
                 let nextRow = this.viewRow + deltaRow;
-                nextRow = Math.min(maxRow, Math.max(0, nextRow));
+                // Wrap around: if at top and go up, go to bottom; if at bottom and go down, go to top
+                if (nextRow > maxRow) {
+                    nextRow = 0;
+                } else if (nextRow < 0) {
+                    nextRow = maxRow;
+                }
 
                 let nextCol = this.viewCol + deltaCol;
                 nextCol = ((nextCol % cols) + cols) % cols;
@@ -2302,6 +2532,11 @@ let currentLanguage = DEFAULT_LANGUAGE;
             ui.competitionHint.classList.toggle('hidden', mode !== 'competition');
             applyModeUI();
             if (mode === 'competition') {
+                // Set rotation speed to maximum (60ms) for competition mode
+                if (ui.rotationSlider) {
+                    ui.rotationSlider.value = 60;
+                    handleRotationSpeedChange({ target: ui.rotationSlider });
+                }
                 prepareCompetitionRound();
             } else {
                 hideCompetitionOverlay();
