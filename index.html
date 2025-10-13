@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 큐브 일반/대회 모드</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top, #1b2735 0%, #090a0f 60%);
+            color: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #scene-container {
+            position: absolute;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #scene-container canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 2;
+            max-width: min(360px, 90vw);
+        }
+
+        .panel {
+            background: rgba(10, 12, 19, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 18px 20px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 12px 30px rgba(5, 8, 20, 0.45);
+        }
+
+        .panel h1 {
+            margin: 0 0 6px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .panel .subtitle {
+            margin: 0 0 16px;
+            font-size: 13px;
+            color: rgba(220, 220, 220, 0.8);
+        }
+
+        .mode-switch {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.08);
+            color: inherit;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(120deg, #3a7bd5 0%, #00d2ff 100%);
+            color: #031222;
+            box-shadow: 0 6px 18px rgba(0, 140, 200, 0.4);
+        }
+
+        .mode-btn:not(.active):hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .status-card {
+            padding: 14px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .status-label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(220, 220, 220, 0.6);
+            margin-bottom: 6px;
+        }
+
+        .status-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .timer-display {
+            font-variant-numeric: tabular-nums;
+        }
+
+        #scramble-sequence {
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(46, 51, 73, 0.4);
+            font-size: 13px;
+            line-height: 1.6;
+            min-height: 40px;
+            word-break: break-word;
+        }
+
+        .instruction-block {
+            margin-top: 14px;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(15, 19, 30, 0.6);
+            font-size: 12px;
+            line-height: 1.5;
+            color: rgba(230, 235, 255, 0.85);
+        }
+
+        .instruction-block strong {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .speed-control {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(15, 19, 30, 0.55);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .speed-control label {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(235, 240, 255, 0.9);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .speed-control input[type="range"] {
+            width: 100%;
+            accent-color: #3a7bd5;
+        }
+
+        .speed-control .speed-hint {
+            font-size: 11px;
+            color: rgba(210, 220, 245, 0.7);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .mobile-face-controls {
+            margin-top: 14px;
+            display: none;
+            gap: 8px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .mobile-face-btn {
+            padding: 12px 0;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.12);
+            color: #f5f7ff;
+            font-weight: 600;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        }
+
+        .mobile-face-btn:hover,
+        .mobile-face-btn:active {
+            transform: translateY(-2px);
+            background: rgba(110, 180, 255, 0.35);
+            box-shadow: 0 10px 18px rgba(60, 120, 200, 0.45);
+        }
+
+        .mobile-face-btn[data-ccw="true"] {
+            background: rgba(255, 200, 140, 0.18);
+        }
+
+        .mobile-face-btn[data-ccw="true"]:hover,
+        .mobile-face-btn[data-ccw="true"]:active {
+            background: rgba(255, 170, 100, 0.35);
+            box-shadow: 0 10px 18px rgba(230, 140, 70, 0.45);
+        }
+
+        body.mobile-view #hud {
+            position: fixed;
+            top: 72px;
+            left: 50%;
+            transform: translate(-50%, -16px);
+            width: calc(100vw - 32px);
+            max-width: 420px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 3;
+        }
+
+        body.mobile-menu-open #hud {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translate(-50%, 0);
+        }
+
+        body.mobile-view #leaderboard-panel {
+            right: 16px;
+            bottom: 140px;
+            width: calc(100vw - 64px);
+            max-width: 320px;
+        }
+
+        body.mobile-view #view-guide {
+            right: 16px;
+            bottom: 280px;
+            top: auto;
+            transform: translateY(0);
+        }
+
+        body.mobile-view .mobile-face-controls {
+            position: fixed;
+            left: 50%;
+            bottom: 12px;
+            transform: translateX(-50%);
+            width: calc(100vw - 32px);
+            max-width: 440px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(10, 12, 20, 0.78);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            display: grid;
+        }
+
+        body.mobile-view .mobile-face-btn {
+            font-size: 15px;
+        }
+
+        body.mobile-view #scene-container {
+            inset: 0;
+        }
+
+        body.mobile-view #hud .panel {
+            box-shadow: none;
+        }
+
+        #view-guide {
+            position: absolute;
+            right: 24px;
+            top: 50%;
+            width: 228px;
+            height: 228px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        #view-guide svg {
+            width: 100%;
+            height: 100%;
+            opacity: 0.85;
+        }
+
+        #view-guide .view-guide-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 18px;
+            height: 18px;
+            margin-left: -9px;
+            margin-top: -9px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.45);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.35);
+        }
+
+        .view-guide-line {
+            stroke-linecap: round;
+        }
+
+        .view-guide-line.top {
+            stroke: rgba(80, 170, 255, 0.58);
+            stroke-width: 2;
+        }
+
+        .view-guide-line.bottom {
+            stroke: rgba(255, 165, 90, 0.55);
+            stroke-width: 1.8;
+            stroke-dasharray: 4 4;
+        }
+
+        .view-guide-btn {
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            margin: -13px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+            color: transparent;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .view-guide-btn.top {
+            background: rgba(90, 170, 255, 0.25);
+        }
+
+        .view-guide-btn.bottom {
+            background: rgba(255, 170, 90, 0.22);
+        }
+
+        .view-guide-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .view-guide-btn.active {
+            border-color: #ffffff;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(200, 225, 255, 0.85));
+            transform: scale(1.18);
+        }
+
+        #competition-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 10, 18, 0.92);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            text-align: center;
+            color: #f5f7ff;
+            padding: 24px;
+        }
+
+        #competition-overlay.visible {
+            display: flex;
+        }
+
+        #competition-overlay.inspection {
+            background: rgba(0, 0, 0, 0);
+            pointer-events: none;
+        }
+
+        #competition-overlay.inspection .competition-overlay-box {
+            background: rgba(15, 19, 32, 0.65);
+        }
+
+        .competition-overlay-box {
+            max-width: 480px;
+            width: 100%;
+            background: rgba(15, 19, 32, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(12px);
+        }
+
+        .competition-overlay-box h2 {
+            margin: 0 0 12px;
+            font-size: 22px;
+        }
+
+        .competition-overlay-box p {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(230, 235, 255, 0.85);
+        }
+
+        #inspection-timer {
+            margin-top: 18px;
+            font-size: 28px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.04em;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .control-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            background: rgba(255, 255, 255, 0.12);
+            color: inherit;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .competition-only {
+            font-size: 13px;
+            color: rgba(240, 240, 240, 0.85);
+            line-height: 1.5;
+        }
+
+        .hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: rgba(200, 220, 255, 0.75);
+        }
+
+        .mobile-menu-toggle {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 4;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(10, 14, 24, 0.75);
+            color: #f5f7ff;
+            font-weight: 600;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(8px);
+        }
+
+        .mobile-menu-toggle[data-expanded="true"] {
+            border-color: rgba(80, 150, 255, 0.6);
+            background: rgba(60, 110, 210, 0.85);
+            box-shadow: 0 12px 22px rgba(60, 120, 210, 0.35);
+        }
+
+        #leaderboard-panel {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            width: min(320px, 90vw);
+            z-index: 2;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        #leaderboard-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .leaderboard-title {
+            margin: 0 0 14px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+        .leaderboard-item {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+        }
+
+        .leaderboard-item strong {
+            font-variant-numeric: tabular-nums;
+            font-size: 15px;
+        }
+
+        .leaderboard-meta {
+            font-size: 11px;
+            color: rgba(220, 220, 220, 0.7);
+            line-height: 1.4;
+        }
+
+        #clear-leaderboard {
+            margin-top: 14px;
+            width: 100%;
+            padding: 10px 0;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 90, 90, 0.85);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        #clear-leaderboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(255, 80, 80, 0.4);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .panel {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .panel h1 {
+                font-size: 19px;
+            }
+
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .control-btn {
+                min-width: unset;
+            }
+
+            .mobile-menu-toggle {
+                display: inline-flex;
+            }
+        }
+    </style>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+         crossorigin="anonymous"></script>
+</head>
+<body>
+    <div id="scene-container"></div>
+
+    <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-expanded="false" aria-controls="hud" data-expanded="false">
+        메뉴 열기
+    </button>
+
+    <div id="hud">
+        <div class="panel">
+            <h1>3D 큐브 스테이션</h1>
+            <p class="subtitle">일반 연습과 대회 모드를 선택해 기록을 쌓아보세요.</p>
+
+            <div class="mode-switch">
+                <button id="mode-normal" class="mode-btn active" data-mode="normal">일반 모드</button>
+                <button id="mode-competition" class="mode-btn" data-mode="competition">대회 모드</button>
+            </div>
+
+            <div class="status-grid">
+                <div class="status-card">
+                    <span class="status-label">상태</span>
+                    <span class="status-value" id="status-text">완료</span>
+                </div>
+                <div class="status-card">
+                    <span class="status-label">이동 수</span>
+                    <span class="status-value" id="move-count">0</span>
+                </div>
+                <div class="status-card">
+                    <span class="status-label">대회 타이머</span>
+                    <span class="status-value timer-display" id="timer-display">00:00.00</span>
+                </div>
+                <div class="status-card">
+                    <span class="status-label">스크램블</span>
+                    <span class="status-value" id="scramble-length">-</span>
+                </div>
+            </div>
+
+            <div id="scramble-sequence">스크램블을 실행하면 수열이 표시됩니다.</div>
+
+            <div class="speed-control">
+                <label for="rotation-speed">
+                    회전 속도
+                    <span id="rotation-speed-value">0.26초</span>
+                </label>
+                <input type="range" id="rotation-speed" min="120" max="600" step="20" value="260">
+                <div class="speed-hint">
+                    <span>빠르게</span>
+                    <span>느리게</span>
+                </div>
+            </div>
+
+            <div class="instruction-block">
+                <strong>단축키 안내</strong>
+                <div>큐브 면 회전: F / R / U / L / B / D (Shift = 반시계)</div>
+                <div>왼손 보조키: Q W E / A S D / Z X C</div>
+                <div>오른손 보조키: } { ㅖ / " : ㅣ / ? > &lt; (Shift = 반시계)</div>
+                <div>시점 이동: ← →, ↑ ↓ 또는 우측 가이드 버튼 클릭 (16개 고정 시점)</div>
+                <div>되돌리기: ↩️ 버튼, 섞기 후 첫 회전은 자동 타이머 시작</div>
+                <div>모바일: 아래 회전 버튼과 우측 시점 가이드를 활용하세요.</div>
+            </div>
+
+        </div>
+
+        <div class="panel">
+            <div class="controls">
+                <button id="scramble-btn" class="control-btn">🎲 섞기</button>
+                <button id="reset-btn" class="control-btn">🔄 초기화</button>
+                <button id="undo-btn" class="control-btn">↩️ 되돌리기</button>
+            </div>
+            <p class="hint competition-only hidden" id="competition-hint">
+                대회 모드에서는 섞기 후 첫 회전을 하면 타이머가 자동으로 시작됩니다. 해결 즉시 기록이 리더보드에 저장됩니다.
+            </p>
+        </div>
+    </div>
+
+    <div id="leaderboard-panel" class="panel">
+        <div class="leaderboard-title">🏆 리더보드</div>
+        <ol id="leaderboard-list"></ol>
+        <button id="clear-leaderboard">기록 초기화</button>
+    </div>
+
+    <div id="view-guide">
+        <svg id="view-guide-lines" viewBox="0 0 228 228" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="view-guide-center"></div>
+    </div>
+
+    <div class="mobile-face-controls" id="mobile-face-controls">
+        <button class="mobile-face-btn" data-face="F">F</button>
+        <button class="mobile-face-btn" data-face="R">R</button>
+        <button class="mobile-face-btn" data-face="U">U</button>
+        <button class="mobile-face-btn" data-face="L">L</button>
+        <button class="mobile-face-btn" data-face="B">B</button>
+        <button class="mobile-face-btn" data-face="D">D</button>
+        <button class="mobile-face-btn" data-face="F" data-ccw="true">F'</button>
+        <button class="mobile-face-btn" data-face="R" data-ccw="true">R'</button>
+        <button class="mobile-face-btn" data-face="U" data-ccw="true">U'</button>
+        <button class="mobile-face-btn" data-face="L" data-ccw="true">L'</button>
+        <button class="mobile-face-btn" data-face="B" data-ccw="true">B'</button>
+        <button class="mobile-face-btn" data-face="D" data-ccw="true">D'</button>
+    </div>
+
+    <div id="competition-overlay">
+        <div class="competition-overlay-box">
+            <h2 id="competition-overlay-title">대회 준비 중</h2>
+            <p id="competition-overlay-message">큐브를 섞고 있습니다.</p>
+            <div id="inspection-timer"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
+    <script>
+        const FACE_COLORS = {
+            front: 'R',
+            right: 'B',
+            back: 'O',
+            left: 'G',
+            top: 'W',
+            bottom: 'Y'
+        };
+
+        const COLOR_MATERIALS = {
+            R: 0xff3b30,
+            B: 0x007aff,
+            O: 0xff9500,
+            G: 0x34c759,
+            W: 0xf5f5f5,
+            Y: 0xffcc00,
+            K: 0x1b1d26
+        };
+
+        const VIEW_YAWS = Array.from({ length: 8 }, (_, index) => (Math.PI / 4) * index + (Math.PI / 4));
+
+        const VIEW_ELEVATIONS = [Math.PI / 6, -Math.PI / 6];
+        const MOBILE_VIEW_ELEVATIONS = [Math.PI / 5.3, -Math.PI / 6];
+        const VIEW_RADIUS = 7;
+        const MOBILE_VIEW_RADIUS = 9.8;
+        const MOBILE_BREAKPOINT = 768;
+
+        const BASE_KEY_TO_FACE = {
+            f: 'F',
+            r: 'R',
+            u: 'U',
+            l: 'L',
+            b: 'B',
+            d: 'D'
+        };
+
+        const LEFT_HAND_KEYS = ['q', 'w', 'e', 'a', 's', 'd', 'z', 'x', 'c'];
+        const RIGHT_HAND_KEYS = ['}', '{', 'ㅖ', '"', ':', 'ㅣ', '?', '>', '<'];
+        const RIGHT_HAND_ALT_KEYS = [']', '[', '\\', ';', "'", '/', '.', ','];
+        const FACE_SEQUENCE = ['L', 'U', 'R', 'F', 'D', 'B', 'L', 'D', 'R'];
+
+        const KEY_TO_FACE = Object.assign({}, BASE_KEY_TO_FACE);
+        LEFT_HAND_KEYS.forEach((key, index) => {
+            KEY_TO_FACE[key] = FACE_SEQUENCE[index];
+        });
+        RIGHT_HAND_KEYS.forEach((key, index) => {
+            KEY_TO_FACE[key] = FACE_SEQUENCE[index];
+        });
+        RIGHT_HAND_ALT_KEYS.forEach((key, index) => {
+            KEY_TO_FACE[key] = FACE_SEQUENCE[index];
+        });
+
+        const CODE_TO_FACE = {
+            KeyF: 'F',
+            KeyR: 'R',
+            KeyU: 'U',
+            KeyL: 'L',
+            KeyB: 'B'
+        };
+
+        const LEFT_HAND_CODES = ['KeyQ', 'KeyW', 'KeyE', 'KeyA', 'KeyS', 'KeyD', 'KeyZ', 'KeyX', 'KeyC'];
+        const RIGHT_HAND_CODES = ['BracketRight', 'BracketLeft', 'Backslash', 'Quote', 'Semicolon', 'KeyL', 'Slash', 'Period', 'Comma'];
+
+        LEFT_HAND_CODES.forEach((code, index) => {
+            CODE_TO_FACE[code] = FACE_SEQUENCE[index];
+        });
+        RIGHT_HAND_CODES.forEach((code, index) => {
+            CODE_TO_FACE[code] = FACE_SEQUENCE[index];
+        });
+
+        const FACE_NORMALS = {
+            front: [0, 0, 1],
+            right: [1, 0, 0],
+            back: [0, 0, -1],
+            left: [-1, 0, 0],
+            top: [0, 1, 0],
+            bottom: [0, -1, 0]
+        };
+
+        const FACE_COORDS = {
+            front: [
+                [-1, 1, 1], [0, 1, 1], [1, 1, 1],
+                [-1, 0, 1], [0, 0, 1], [1, 0, 1],
+                [-1, -1, 1], [0, -1, 1], [1, -1, 1]
+            ],
+            right: [
+                [1, 1, 1], [1, 1, 0], [1, 1, -1],
+                [1, 0, 1], [1, 0, 0], [1, 0, -1],
+                [1, -1, 1], [1, -1, 0], [1, -1, -1]
+            ],
+            back: [
+                [1, 1, -1], [0, 1, -1], [-1, 1, -1],
+                [1, 0, -1], [0, 0, -1], [-1, 0, -1],
+                [1, -1, -1], [0, -1, -1], [-1, -1, -1]
+            ],
+            left: [
+                [-1, 1, -1], [-1, 1, 0], [-1, 1, 1],
+                [-1, 0, -1], [-1, 0, 0], [-1, 0, 1],
+                [-1, -1, -1], [-1, -1, 0], [-1, -1, 1]
+            ],
+            top: [
+                [-1, 1, -1], [0, 1, -1], [1, 1, -1],
+                [-1, 1, 0], [0, 1, 0], [1, 1, 0],
+                [-1, 1, 1], [0, 1, 1], [1, 1, 1]
+            ],
+            bottom: [
+                [-1, -1, 1], [0, -1, 1], [1, -1, 1],
+                [-1, -1, 0], [0, -1, 0], [1, -1, 0],
+                [-1, -1, -1], [0, -1, -1], [1, -1, -1]
+            ]
+        };
+
+        const STICKER_TEMPLATE = (() => {
+            const stickers = [];
+            for (const [face, coords] of Object.entries(FACE_COORDS)) {
+                const normal = FACE_NORMALS[face];
+                const color = FACE_COLORS[face];
+                coords.forEach(coord => {
+                    stickers.push({
+                        color,
+                        position: coord.slice(),
+                        normal: normal.slice()
+                    });
+                });
+            }
+            return stickers;
+        })();
+
+        const FACE_TURNS = {
+            F: { axis: 'z', value: 1 },
+            B: { axis: 'z', value: -1 },
+            R: { axis: 'x', value: 1 },
+            L: { axis: 'x', value: -1 },
+            U: { axis: 'y', value: 1 },
+            D: { axis: 'y', value: -1 }
+        };
+
+        const AXIS_INDEX = { x: 0, y: 1, z: 2 };
+
+        function rotateVector([x, y, z], axis, angleSign) {
+            switch (axis) {
+                case 'x':
+                    return angleSign === 1 ? [x, -z, y] : [x, z, -y];
+                case 'y':
+                    return angleSign === 1 ? [z, y, -x] : [-z, y, x];
+                case 'z':
+                    return angleSign === 1 ? [-y, x, z] : [y, -x, z];
+                default:
+                    return [x, y, z];
+            }
+        }
+
+        function normalizeVector(vector) {
+            return vector.map(value => {
+                if (Math.abs(value) < 1e-6) return 0;
+                const rounded = Math.round(value);
+                return Math.abs(rounded) === 0 ? 0 : rounded;
+            });
+        }
+
+        function normalToFace([x, y, z]) {
+            if (x === 1) return 'right';
+            if (x === -1) return 'left';
+            if (y === 1) return 'top';
+            if (y === -1) return 'bottom';
+            if (z === 1) return 'front';
+            if (z === -1) return 'back';
+            throw new Error('올바르지 않은 노멀입니다: ' + [x, y, z]);
+        }
+
+        class RubiksCube {
+            constructor(options = {}) {
+                this.options = Object.assign({
+                    containerId: 'scene-container',
+                    onMove: null,
+                    onStateChange: null,
+                    onSolved: null,
+                    onUnsolved: null,
+                    onViewChange: null
+                }, options);
+
+                this.container = document.getElementById(this.options.containerId);
+                if (!this.container) {
+                    throw new Error('큐브를 렌더링할 컨테이너를 찾을 수 없습니다.');
+                }
+
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.cubeGroup = null;
+                this.cubelets = [];
+                this.isAnimating = false;
+
+                this.stickers = this.createInitialStickers();
+                this.userHistory = [];
+                this.currentScramble = [];
+                this.wasSolved = true;
+                this.viewRow = 0;
+                this.viewCol = 0;
+                this.rotationDuration = this.options.rotationDuration || 260;
+
+                this.initScene();
+                this.createCube();
+                this.updateCameraPosition();
+                this.initControls();
+                this.animate();
+                this.emitStateChange({ source: 'init' });
+            }
+
+            initScene() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0a0c13);
+
+                this.camera = new THREE.PerspectiveCamera(
+                    60,
+                    this.container.clientWidth / this.container.clientHeight,
+                    0.1,
+                    1000
+                );
+                this.camera.position.set(6, 6, 6);
+                this.camera.lookAt(0, 0, 0);
+
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                const initialWidth = this.container.clientWidth || window.innerWidth;
+                const initialHeight = this.container.clientHeight || window.innerHeight;
+                this.renderer.setSize(initialWidth, initialHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.container.innerHTML = '';
+                this.container.appendChild(this.renderer.domElement);
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(10, 12, 8);
+                directionalLight.castShadow = true;
+                this.scene.add(directionalLight);
+
+                window.addEventListener('resize', () => this.handleResize());
+            }
+
+            handleResize() {
+                const width = this.container.clientWidth || window.innerWidth;
+                const height = this.container.clientHeight || window.innerHeight;
+                this.camera.aspect = width / height;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(width, height);
+                this.updateCameraPosition();
+            }
+
+            createCube() {
+                this.cubeGroup = new THREE.Group();
+                this.cubelets = [];
+
+                for (let x = -1; x <= 1; x++) {
+                    for (let y = -1; y <= 1; y++) {
+                        for (let z = -1; z <= 1; z++) {
+                            const cubelet = this.createCubelet(x, y, z);
+                            cubelet.position.set(x * 1.05, y * 1.05, z * 1.05);
+                            this.cubelets.push(cubelet);
+                            this.cubeGroup.add(cubelet);
+                        }
+                    }
+                }
+
+                this.scene.add(this.cubeGroup);
+            }
+
+            createCubelet(x, y, z) {
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const materials = [];
+
+                const faces = [
+                    x === 1 ? FACE_COLORS.right : 'K',
+                    x === -1 ? FACE_COLORS.left : 'K',
+                    y === 1 ? FACE_COLORS.top : 'K',
+                    y === -1 ? FACE_COLORS.bottom : 'K',
+                    z === 1 ? FACE_COLORS.front : 'K',
+                    z === -1 ? FACE_COLORS.back : 'K'
+                ];
+
+                faces.forEach(code => {
+                    materials.push(new THREE.MeshLambertMaterial({ color: COLOR_MATERIALS[code] }));
+                });
+
+                const cubelet = new THREE.Mesh(geometry, materials);
+                cubelet.castShadow = true;
+                cubelet.receiveShadow = true;
+
+                const edges = new THREE.EdgesGeometry(geometry);
+                const line = new THREE.LineSegments(
+                    edges,
+                    new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 })
+                );
+                cubelet.add(line);
+
+                return cubelet;
+            }
+
+            initControls() {
+                const dom = this.renderer.domElement;
+
+                dom.addEventListener('wheel', event => {
+                    event.preventDefault();
+                    const scale = event.deltaY > 0 ? 1.08 : 0.92;
+                    this.camera.position.multiplyScalar(scale);
+                }, { passive: false });
+
+                document.addEventListener('keydown', event => {
+                    if (state.mode === 'competition' && !state.allowCubeInteraction) {
+                        return;
+                    }
+                    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+                        event.preventDefault();
+                        switch (event.key) {
+                            case 'ArrowLeft':
+                                this.moveView(0, -1);
+                                break;
+                            case 'ArrowRight':
+                                this.moveView(0, 1);
+                                break;
+                            case 'ArrowUp':
+                                this.moveView(-1, 0);
+                                break;
+                            case 'ArrowDown':
+                                this.moveView(1, 0);
+                                break;
+                        }
+                        return;
+                    }
+
+                    const key = event.key.toLowerCase();
+                    const counter = event.shiftKey;
+                    const mappedFace = KEY_TO_FACE[key] || CODE_TO_FACE[event.code];
+                    if (mappedFace) {
+                        this.rotateFace(mappedFace, counter, { source: 'user', recordHistory: true });
+                    }
+                });
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            updateCameraPosition() {
+                const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+                const elevations = isMobile ? MOBILE_VIEW_ELEVATIONS : VIEW_ELEVATIONS;
+                const rows = elevations.length;
+                const cols = VIEW_YAWS.length;
+                const safeRow = Math.min(rows - 1, Math.max(0, this.viewRow));
+                const safeCol = ((this.viewCol % cols) + cols) % cols;
+                const yaw = VIEW_YAWS[safeCol];
+                const elevation = elevations[safeRow];
+                const radius = isMobile ? MOBILE_VIEW_RADIUS : VIEW_RADIUS;
+                const cosElevation = Math.cos(elevation);
+                const x = radius * cosElevation * Math.cos(yaw);
+                const baseY = radius * Math.sin(elevation);
+                const z = radius * cosElevation * Math.sin(yaw);
+                const yOffset = isMobile ? 0.9 : 0;
+                const y = baseY + yOffset;
+
+                this.camera.position.set(x, y, z);
+                this.camera.lookAt(0, 0, 0);
+                this.camera.up.set(0, 1, 0);
+            }
+
+            setView(row, col) {
+                const rows = (window.innerWidth <= MOBILE_BREAKPOINT ? MOBILE_VIEW_ELEVATIONS.length : VIEW_ELEVATIONS.length);
+                const cols = VIEW_YAWS.length;
+                this.viewRow = Math.min(rows - 1, Math.max(0, row));
+                this.viewCol = ((col % cols) + cols) % cols;
+                this.updateCameraPosition();
+                if (typeof this.options.onViewChange === 'function') {
+                    this.options.onViewChange({ row: this.viewRow, col: this.viewCol });
+                }
+            }
+
+            setRotationDuration(duration) {
+                const safe = Math.max(60, duration);
+                this.rotationDuration = safe;
+            }
+
+            moveView(deltaRow, deltaCol) {
+                const rows = (window.innerWidth <= MOBILE_BREAKPOINT ? MOBILE_VIEW_ELEVATIONS.length : VIEW_ELEVATIONS.length);
+                const maxRow = rows - 1;
+                const cols = VIEW_YAWS.length;
+
+                let nextRow = this.viewRow + deltaRow;
+                nextRow = Math.min(maxRow, Math.max(0, nextRow));
+
+                let nextCol = this.viewCol + deltaCol;
+                nextCol = ((nextCol % cols) + cols) % cols;
+
+                this.setView(nextRow, nextCol);
+            }
+
+            resetOrientation() {
+                this.cubeGroup.rotation.set(0, 0, 0);
+                this.updateCameraPosition();
+                if (typeof this.options.onViewChange === 'function') {
+                    this.options.onViewChange({ row: this.viewRow, col: this.viewCol });
+                }
+            }
+
+            createInitialStickers() {
+                return STICKER_TEMPLATE.map(sticker => ({
+                    color: sticker.color,
+                    position: sticker.position.slice(),
+                    normal: sticker.normal.slice()
+                }));
+            }
+
+            rotateFace(face, counterClockwise = false, options = {}) {
+                const { recordHistory = false, source = 'system' } = options;
+
+                return new Promise(resolve => {
+                    const attempt = () => {
+                        if (this.isAnimating) {
+                            requestAnimationFrame(attempt);
+                            return;
+                        }
+                        this.performRotation(face, counterClockwise, { recordHistory, source }, resolve);
+                    };
+                    attempt();
+                });
+            }
+
+            performRotation(face, counterClockwise, options, resolve) {
+                const { recordHistory, source } = options;
+
+                this.isAnimating = true;
+                let cubeletsToRotate = [];
+                const rotationAxis = new THREE.Vector3();
+
+                const epsilon = 0.01;
+                switch (face) {
+                    case 'F':
+                        rotationAxis.set(0, 0, 1);
+                        cubeletsToRotate = this.cubelets.filter(c =>
+                            Math.abs(c.position.z - 1.05) < epsilon
+                        );
+                        break;
+                    case 'B':
+                        rotationAxis.set(0, 0, -1);
+                        cubeletsToRotate = this.cubelets.filter(c =>
+                            Math.abs(c.position.z + 1.05) < epsilon
+                        );
+                        break;
+                    case 'R':
+                        rotationAxis.set(1, 0, 0);
+                        cubeletsToRotate = this.cubelets.filter(c =>
+                            Math.abs(c.position.x - 1.05) < epsilon
+                        );
+                        break;
+                    case 'L':
+                        rotationAxis.set(-1, 0, 0);
+                        cubeletsToRotate = this.cubelets.filter(c =>
+                            Math.abs(c.position.x + 1.05) < epsilon
+                        );
+                        break;
+                    case 'U':
+                        rotationAxis.set(0, 1, 0);
+                        cubeletsToRotate = this.cubelets.filter(c =>
+                            Math.abs(c.position.y - 1.05) < epsilon
+                        );
+                        break;
+                    case 'D':
+                        rotationAxis.set(0, -1, 0);
+                        cubeletsToRotate = this.cubelets.filter(c =>
+                            Math.abs(c.position.y + 1.05) < epsilon
+                        );
+                        break;
+                    default:
+                        this.isAnimating = false;
+                        resolve();
+                        return;
+                }
+
+                const rotationGroup = new THREE.Group();
+                this.scene.add(rotationGroup);
+
+                cubeletsToRotate.forEach(cubelet => {
+                    const worldPos = new THREE.Vector3();
+                    const worldQuat = new THREE.Quaternion();
+                    const worldScale = new THREE.Vector3();
+
+                    cubelet.getWorldPosition(worldPos);
+                    cubelet.getWorldQuaternion(worldQuat);
+                    cubelet.getWorldScale(worldScale);
+
+                    this.cubeGroup.remove(cubelet);
+                    rotationGroup.add(cubelet);
+
+                    cubelet.position.copy(worldPos);
+                    cubelet.quaternion.copy(worldQuat);
+                    cubelet.scale.copy(worldScale);
+                });
+
+                const duration = this.rotationDuration;
+                const angle = counterClockwise ? -Math.PI / 2 : Math.PI / 2;
+                const startTime = performance.now();
+
+                const animateStep = () => {
+                    const elapsed = performance.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = this.easeInOut(progress);
+                    const currentAngle = angle * eased;
+
+                    rotationGroup.rotation.set(0, 0, 0);
+                    rotationGroup.rotateOnAxis(rotationAxis, currentAngle);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animateStep);
+                        return;
+                    }
+
+                    cubeletsToRotate.forEach(cubelet => {
+                        const worldPos = new THREE.Vector3();
+                        const worldQuat = new THREE.Quaternion();
+                        const worldScale = new THREE.Vector3();
+
+                        cubelet.getWorldPosition(worldPos);
+                        cubelet.getWorldQuaternion(worldQuat);
+                        cubelet.getWorldScale(worldScale);
+
+                        rotationGroup.remove(cubelet);
+                        this.cubeGroup.add(cubelet);
+
+                        cubelet.position.copy(worldPos);
+                        cubelet.quaternion.copy(worldQuat);
+                        cubelet.scale.copy(worldScale);
+
+                        cubelet.position.x = Math.round(cubelet.position.x / 1.05) * 1.05;
+                        cubelet.position.y = Math.round(cubelet.position.y / 1.05) * 1.05;
+                        cubelet.position.z = Math.round(cubelet.position.z / 1.05) * 1.05;
+                    });
+
+                    this.scene.remove(rotationGroup);
+
+                    this.rotateFaceState(face, counterClockwise);
+
+                    if (recordHistory) {
+                        const moveNotation = counterClockwise ? face.toLowerCase() : face.toUpperCase();
+                        this.userHistory.push(moveNotation);
+                    }
+
+                    this.emitStateChange({ face, counterClockwise, source });
+                    this.isAnimating = false;
+                    resolve();
+                };
+
+                requestAnimationFrame(animateStep);
+            }
+
+            easeInOut(t) {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
+
+            rotateFaceState(face, counterClockwise) {
+                const turn = FACE_TURNS[face];
+                if (!turn) {
+                    return;
+                }
+
+                const axisIndex = AXIS_INDEX[turn.axis];
+                const angleSign = counterClockwise ? 1 : -1;
+
+                this.stickers.forEach(sticker => {
+                    if (Math.abs(sticker.position[axisIndex] - turn.value) < 1e-6) {
+                        sticker.position = normalizeVector(rotateVector(sticker.position, turn.axis, angleSign));
+                        sticker.normal = normalizeVector(rotateVector(sticker.normal, turn.axis, angleSign));
+                    }
+                });
+            }
+
+            isSolved() {
+                return this.stickers.every(sticker => {
+                    const face = normalToFace(sticker.normal);
+                    return sticker.color === FACE_COLORS[face];
+                });
+            }
+
+            emitStateChange(event = {}) {
+                const solved = this.isSolved();
+                const payload = Object.assign({ solved }, event, {
+                    moves: this.getUserMoveCount(),
+                    scramble: this.currentScramble.slice()
+                });
+
+                if (!solved && this.wasSolved) {
+                    this.wasSolved = false;
+                    if (typeof this.options.onUnsolved === 'function') {
+                        this.options.onUnsolved(payload);
+                    }
+                }
+
+                if (typeof this.options.onStateChange === 'function') {
+                    this.options.onStateChange(payload);
+                }
+
+                if (payload.source === 'user' && typeof this.options.onMove === 'function') {
+                    this.options.onMove(payload);
+                }
+
+                if (solved && !this.wasSolved) {
+                    this.wasSolved = true;
+                    if (typeof this.options.onSolved === 'function') {
+                        this.options.onSolved(payload);
+                    }
+                }
+            }
+
+            getUserMoveCount() {
+                return this.userHistory.length;
+            }
+
+            clearUserHistory() {
+                this.userHistory = [];
+            }
+
+            shuffle(moveCount = 25) {
+                this.resetOrientation();
+                const faces = ['F', 'R', 'U', 'L', 'B', 'D'];
+                const sequence = [];
+                let previousFace = null;
+
+                while (sequence.length < moveCount) {
+                    const face = faces[Math.floor(Math.random() * faces.length)];
+                    if (face === previousFace) continue;
+                    const ccw = Math.random() > 0.5;
+                    sequence.push(ccw ? face.toLowerCase() : face);
+                    previousFace = face;
+                }
+
+                this.currentScramble = sequence.slice();
+                this.clearUserHistory();
+
+                return this.executeMovesSequence(sequence, { recordHistory: false, source: 'scramble' })
+                    .then(() => sequence);
+            }
+
+            executeMovesSequence(sequence, options = {}) {
+                return sequence.reduce((promise, move) => {
+                    const face = move.toUpperCase();
+                    const ccw = move === move.toLowerCase();
+                    return promise.then(() => this.rotateFace(face, ccw, options));
+                }, Promise.resolve());
+            }
+
+            reset() {
+                const performReset = () => {
+                    this.stickers = this.createInitialStickers();
+                    this.clearUserHistory();
+                    this.currentScramble = [];
+                    this.wasSolved = true;
+                    this.resetOrientation();
+
+                    this.cubelets.forEach((cubelet, index) => {
+                        const x = Math.floor(index / 9) - 1;
+                        const y = Math.floor((index % 9) / 3) - 1;
+                        const z = (index % 3) - 1;
+                        cubelet.position.set(x * 1.05, y * 1.05, z * 1.05);
+                        cubelet.quaternion.set(0, 0, 0, 1);
+                    });
+
+                    this.emitStateChange({ source: 'reset' });
+                };
+
+                if (this.isAnimating) {
+                    return new Promise(resolve => {
+                        const wait = () => {
+                            if (this.isAnimating) {
+                                requestAnimationFrame(wait);
+                                return;
+                            }
+                            performReset();
+                            resolve();
+                        };
+                        wait();
+                    });
+                }
+
+                performReset();
+                return Promise.resolve();
+            }
+
+            undoLastMove() {
+                if (!this.userHistory.length) {
+                    return Promise.resolve(false);
+                }
+                const lastMove = this.userHistory.pop();
+                const inverse = lastMove === lastMove.toUpperCase()
+                    ? lastMove.toLowerCase()
+                    : lastMove.toUpperCase();
+                return this.rotateFace(inverse.toUpperCase(), inverse === inverse.toLowerCase(), {
+                    recordHistory: false,
+                    source: 'undo'
+                }).then(() => true);
+            }
+        }
+
+        function pad(number, length = 2) {
+            return number.toString().padStart(length, '0');
+        }
+
+        function formatTime(ms) {
+            const totalMs = Math.max(ms, 0);
+            const minutes = Math.floor(totalMs / 60000);
+            const seconds = Math.floor((totalMs % 60000) / 1000);
+            const hundredths = Math.floor((totalMs % 1000) / 10);
+            return `${pad(minutes)}:${pad(seconds)}.${pad(hundredths)}`;
+        }
+
+        function updateRotationSpeedLabel(ms) {
+            const seconds = (ms / 1000).toFixed(2);
+            if (ui.rotationSpeedValue) {
+                ui.rotationSpeedValue.textContent = `${seconds}초`;
+            }
+        }
+
+        function isMobileViewport() {
+            return window.innerWidth <= MOBILE_BREAKPOINT;
+        }
+
+        function showCompetitionOverlay(title, message) {
+            if (!ui.competitionOverlay) return;
+            ui.competitionOverlay.classList.add('visible');
+            ui.competitionOverlay.classList.remove('inspection');
+            if (ui.competitionOverlayTitle) ui.competitionOverlayTitle.textContent = title;
+            if (ui.competitionOverlayMessage) ui.competitionOverlayMessage.textContent = message;
+            if (ui.inspectionTimer) ui.inspectionTimer.textContent = '';
+        }
+
+        function hideCompetitionOverlay() {
+            if (!ui.competitionOverlay) return;
+            ui.competitionOverlay.classList.remove('visible');
+            ui.competitionOverlay.classList.remove('inspection');
+            if (ui.inspectionTimer) ui.inspectionTimer.textContent = '';
+        }
+
+        function updateInspectionTimerDisplay(remainingSeconds) {
+            if (!ui.inspectionTimer) return;
+            const value = Math.max(0, remainingSeconds);
+            ui.inspectionTimer.textContent = value.toFixed(2) + '초';
+        }
+
+        function syncMobileMenuButton() {
+            if (!ui.mobileMenuToggle) return;
+            const expanded = document.body.classList.contains('mobile-menu-open');
+            ui.mobileMenuToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            ui.mobileMenuToggle.dataset.expanded = expanded ? 'true' : 'false';
+            ui.mobileMenuToggle.textContent = expanded ? '메뉴 닫기' : '메뉴 열기';
+        }
+
+        function toggleMobileMenu(force) {
+            if (!state.isMobile) return;
+            const shouldOpen = typeof force === 'boolean' ? force : !document.body.classList.contains('mobile-menu-open');
+            document.body.classList.toggle('mobile-menu-open', shouldOpen);
+            syncMobileMenuButton();
+        }
+
+        function updateResponsiveUI() {
+            state.isMobile = isMobileViewport();
+            document.body.classList.toggle('mobile-view', state.isMobile);
+            if (!state.isMobile) {
+                document.body.classList.remove('mobile-menu-open');
+            }
+            syncMobileMenuButton();
+            if (state.cube) {
+                state.cube.updateCameraPosition();
+            }
+        }
+
+        const ui = {
+            statusText: document.getElementById('status-text'),
+            moveCount: document.getElementById('move-count'),
+            timerDisplay: document.getElementById('timer-display'),
+            scrambleLength: document.getElementById('scramble-length'),
+            scrambleSequence: document.getElementById('scramble-sequence'),
+            competitionHint: document.getElementById('competition-hint'),
+            leaderboardPanel: document.getElementById('leaderboard-panel'),
+            leaderboardList: document.getElementById('leaderboard-list'),
+            scrambleBtn: document.getElementById('scramble-btn'),
+            resetBtn: document.getElementById('reset-btn'),
+            undoBtn: document.getElementById('undo-btn'),
+            clearLeaderboard: document.getElementById('clear-leaderboard'),
+            rotationSlider: document.getElementById('rotation-speed'),
+            rotationSpeedValue: document.getElementById('rotation-speed-value'),
+            mobileMenuToggle: document.getElementById('mobile-menu-toggle'),
+            mobileFaceControls: document.getElementById('mobile-face-controls'),
+            competitionOverlay: document.getElementById('competition-overlay'),
+            competitionOverlayTitle: document.getElementById('competition-overlay-title'),
+            competitionOverlayMessage: document.getElementById('competition-overlay-message'),
+            inspectionTimer: document.getElementById('inspection-timer'),
+            modeButtons: {
+                normal: document.getElementById('mode-normal'),
+                competition: document.getElementById('mode-competition')
+            }
+        };
+
+        const state = {
+            mode: 'normal',
+            cube: null,
+            timerStart: null,
+            timerLoop: null,
+            timerRunning: false,
+            attemptActive: false,
+            lastKnownMs: 0,
+            scrambleSequence: [],
+            rotationDuration: 260,
+            isMobile: window.innerWidth <= MOBILE_BREAKPOINT,
+            leaderboard: loadLeaderboard(),
+            allowCubeInteraction: true,
+            competition: {
+                phase: 'idle',
+                penalty: 0,
+                dnf: false,
+                holdTimeout: null,
+                inspectionTimer: null,
+                holdStart: null,
+                inspectionStart: null,
+                inspectionElapsed: 0
+            }
+        };
+
+        let viewGuideButtons = [];
+        let viewGuideReady = false;
+
+        function buildViewGuideOverlay() {
+            if (viewGuideReady) return;
+            const container = document.getElementById('view-guide');
+            const svg = document.getElementById('view-guide-lines');
+            if (!container || !svg) return;
+
+            const center = 114;
+            const topRadius = 92;
+            const bottomRadius = 66;
+
+            VIEW_ELEVATIONS.forEach((_, row) => {
+                VIEW_YAWS.forEach((angle, col) => {
+                    const radius = row === 0 ? topRadius : bottomRadius;
+                    const x = center + radius * Math.cos(angle);
+                    const y = center + radius * Math.sin(angle);
+
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.classList.add('view-guide-line', row === 0 ? 'top' : 'bottom');
+                    line.setAttribute('x1', center);
+                    line.setAttribute('y1', center);
+                    line.setAttribute('x2', x);
+                    line.setAttribute('y2', y);
+                    svg.appendChild(line);
+
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = `view-guide-btn ${row === 0 ? 'top' : 'bottom'}`;
+                    button.style.left = `${x}px`;
+                    button.style.top = `${y}px`;
+                    button.dataset.row = String(row);
+                    button.dataset.col = String(col);
+                    button.setAttribute('aria-label', row === 0 ? `상단 시점 ${col + 1}` : `하단 시점 ${col + 1}`);
+                    button.setAttribute('aria-pressed', 'false');
+                    button.addEventListener('click', () => {
+                        if (!state.cube) return;
+                        state.cube.resetOrientation();
+                        state.cube.setView(row, col);
+                    });
+                    container.appendChild(button);
+                    viewGuideButtons.push(button);
+                });
+            });
+
+            viewGuideReady = true;
+        }
+
+        function updateViewGuideActive(row, col) {
+            viewGuideButtons.forEach(button => {
+                const match = Number(button.dataset.row) === row && Number(button.dataset.col) === col;
+                button.classList.toggle('active', match);
+                button.setAttribute('aria-pressed', match ? 'true' : 'false');
+            });
+        }
+
+        function loadLeaderboard() {
+            try {
+                const raw = sessionStorage.getItem('cubeCompetitionRecords');
+                if (!raw) return [];
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+            } catch (error) {
+                console.warn('리더보드 데이터를 불러오지 못했습니다.', error);
+            }
+            return [];
+        }
+
+        function persistLeaderboard() {
+            sessionStorage.setItem('cubeCompetitionRecords', JSON.stringify(state.leaderboard));
+        }
+
+        function renderLeaderboard() {
+            ui.leaderboardList.innerHTML = '';
+            if (!state.leaderboard.length) {
+                const empty = document.createElement('li');
+                empty.textContent = '기록이 없습니다.';
+                empty.style.color = 'rgba(220,220,220,0.6)';
+                ui.leaderboardList.appendChild(empty);
+                ui.leaderboardPanel.classList.remove('visible');
+                return;
+            }
+
+            state.leaderboard.forEach((entry, index) => {
+                const li = document.createElement('li');
+                li.className = 'leaderboard-item';
+
+                const title = document.createElement('strong');
+                if (entry.dnf) {
+                    title.textContent = `${index + 1}. DNF`;
+                } else {
+                    let label = `${index + 1}. ${formatTime(entry.timeMs)}`;
+                    if (entry.penalty === 2) {
+                        label += ' (+2)';
+                    }
+                    title.textContent = label;
+                }
+
+                const meta = document.createElement('div');
+                meta.className = 'leaderboard-meta';
+                meta.innerHTML = [
+                    `Moves ${entry.moves}`,
+                    entry.penalty === 2 ? 'Inspection Penalty: +2' : '',
+                    entry.scramble ? `Scramble: ${entry.scramble}` : '',
+                    entry.date
+                ].filter(Boolean).join('<br>');
+
+                li.appendChild(title);
+                li.appendChild(meta);
+                ui.leaderboardList.appendChild(li);
+            });
+
+            ui.leaderboardPanel.classList.add('visible');
+        }
+
+        function clearCompetitionTimers() {
+            if (state.competition.holdTimeout) {
+                clearTimeout(state.competition.holdTimeout);
+                state.competition.holdTimeout = null;
+            }
+            if (state.competition.inspectionTimer) {
+                clearInterval(state.competition.inspectionTimer);
+                state.competition.inspectionTimer = null;
+            }
+        }
+
+        function resetCompetitionState() {
+            clearCompetitionTimers();
+            state.competition.phase = 'idle';
+            state.competition.penalty = 0;
+            state.competition.dnf = false;
+            state.competition.holdStart = null;
+            state.competition.inspectionStart = null;
+            state.competition.inspectionElapsed = 0;
+            updateInspectionTimerDisplay(0);
+        }
+
+        function prepareCompetitionRound() {
+            if (!state.cube) return;
+            resetCompetitionState();
+            state.allowCubeInteraction = false;
+            state.attemptActive = false;
+            state.competition.phase = 'preparing';
+            stopTimer();
+            ui.timerDisplay.textContent = '00:00.00';
+            ui.moveCount.textContent = '0';
+            if (state.isMobile) {
+                toggleMobileMenu(false);
+            }
+            showCompetitionOverlay('대회 준비 중', '큐브를 섞는 중입니다.');
+            const scrambleLength = 25;
+            state.cube.resetOrientation();
+            state.cube.shuffle(scrambleLength).then(sequence => {
+                state.scrambleSequence = sequence;
+                ui.scrambleLength.textContent = `${sequence.length} 수`;
+                ui.scrambleSequence.textContent = sequence.join(' ');
+                state.cube.clearUserHistory();
+                state.competition.phase = 'covered';
+                showCompetitionOverlay('대회 준비 완료', '스페이스바를 2초 동안 누르면 15초 동안 큐브를 확인할 수 있습니다.');
+                updateInspectionTimerDisplay(0);
+                ui.statusText.textContent = '대회 준비';
+            }).catch(() => {
+                showCompetitionOverlay('섞기 실패', '다시 시도하려면 스페이스바를 누르세요.');
+                state.competition.phase = 'covered';
+            });
+        }
+
+        function startCompetitionHold() {
+            if (state.competition.phase !== 'covered') return;
+            state.allowCubeInteraction = false;
+            state.competition.phase = 'hold';
+            state.competition.holdStart = Date.now();
+            showCompetitionOverlay('준비 중', '스페이스바를 2초 동안 눌러주세요.');
+            updateInspectionTimerDisplay(0);
+            ui.statusText.textContent = '준비 중 (홀드)';
+            clearCompetitionTimers();
+            state.competition.holdTimeout = setTimeout(() => {
+                if (state.competition.phase === 'hold') {
+                    beginInspectionPhase();
+                }
+            }, 2000);
+        }
+
+        function cancelCompetitionHold() {
+            clearCompetitionTimers();
+            state.competition.penalty = 0;
+            state.competition.phase = 'covered';
+            hideCompetitionOverlay();
+            showCompetitionOverlay('다시 시도', '스페이스바를 2초 동안 누르고 있으세요.');
+        }
+
+        function beginInspectionPhase() {
+            state.competition.phase = 'inspection';
+            state.competition.penalty = 0;
+            state.competition.dnf = false;
+            state.competition.inspectionStart = Date.now();
+            state.competition.inspectionElapsed = 0;
+            if (ui.competitionOverlay) {
+                ui.competitionOverlay.classList.add('visible');
+                ui.competitionOverlay.classList.add('inspection');
+                ui.competitionOverlayTitle.textContent = '검사 중';
+                ui.competitionOverlayMessage.textContent = '15초 안에 큐브를 확인하고 스페이스바를 놓으세요.';
+            }
+            updateInspectionTimerDisplay(15);
+            ui.statusText.textContent = '검사 중';
+            state.competition.inspectionTimer = setInterval(() => {
+                const now = Date.now();
+                const elapsed = now - state.competition.inspectionStart;
+                state.competition.inspectionElapsed = elapsed;
+                const remaining = 15 - elapsed / 1000;
+                updateInspectionTimerDisplay(Math.max(0, remaining));
+                if (elapsed >= 17000) {
+                    clearCompetitionTimers();
+                    failCompetitionAttempt('inspection');
+                } else if (elapsed > 15000) {
+                    state.competition.penalty = 2;
+                    if (ui.competitionOverlayMessage) {
+                        ui.competitionOverlayMessage.textContent = '15초 초과 (+2초 패널티). 17초 전에 시작하세요!';
+                    }
+                }
+            }, 50);
+        }
+
+        function startSolvingPhase() {
+            hideCompetitionOverlay();
+            if (ui.competitionOverlay) {
+                ui.competitionOverlay.classList.remove('inspection');
+            }
+            state.competition.dnf = false;
+            state.allowCubeInteraction = true;
+            state.attemptActive = true;
+            state.competition.phase = 'solving';
+            state.timerRunning = false;
+            startTimer();
+            ui.statusText.textContent = '솔빙 중';
+        }
+
+        function failCompetitionAttempt(reason) {
+            clearCompetitionTimers();
+            state.allowCubeInteraction = false;
+            state.attemptActive = false;
+            state.competition.phase = 'failed';
+            state.competition.dnf = true;
+            showCompetitionOverlay('도전 실패', reason === 'inspection' ? '17초를 초과했습니다.' : '조건을 만족하지 못했습니다.');
+            ui.statusText.textContent = '도전 실패';
+            ui.timerDisplay.textContent = 'DNF';
+            setTimeout(() => {
+                if (state.mode === 'competition') {
+                    prepareCompetitionRound();
+                }
+            }, 3000);
+        }
+
+        function handleCompetitionSpaceDown() {
+            if (state.mode !== 'competition') return;
+            if (state.competition.phase === 'covered') {
+                startCompetitionHold();
+            }
+        }
+
+        function handleCompetitionSpaceUp() {
+            if (state.mode !== 'competition') return;
+            if (state.competition.phase === 'hold') {
+                const holdDuration = Date.now() - (state.competition.holdStart || Date.now());
+                if (holdDuration < 2000) {
+                    cancelCompetitionHold();
+                    return;
+                }
+                // if hold finished naturally, phase might already switch to inspection, continue below
+                if (state.competition.phase === 'hold') {
+                    clearCompetitionTimers();
+                    beginInspectionPhase();
+                }
+            }
+            if (state.competition.phase === 'inspection') {
+                clearCompetitionTimers();
+                const elapsed = Date.now() - (state.competition.inspectionStart || Date.now());
+                state.competition.inspectionElapsed = elapsed;
+                if (elapsed > 17000) {
+                    failCompetitionAttempt('inspection');
+                    return;
+                }
+                state.competition.penalty = elapsed > 15000 ? 2 : 0;
+                startSolvingPhase();
+                return;
+            }
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            ui.modeButtons.normal.classList.toggle('active', mode === 'normal');
+            ui.modeButtons.competition.classList.toggle('active', mode === 'competition');
+            ui.competitionHint.classList.toggle('hidden', mode !== 'competition');
+            applyModeUI();
+            if (mode === 'competition') {
+                prepareCompetitionRound();
+            } else {
+                hideCompetitionOverlay();
+                resetCompetitionState();
+                state.allowCubeInteraction = true;
+            }
+        }
+
+        function setControlsDisabled(disabled) {
+            ui.scrambleBtn.disabled = disabled;
+            ui.resetBtn.disabled = disabled;
+            ui.undoBtn.disabled = disabled;
+        }
+
+        function applyModeUI() {
+            if (state.mode === 'normal') {
+                stopTimer();
+                state.attemptActive = false;
+                ui.timerDisplay.textContent = '00:00.00';
+                if (state.cube && state.cube.isSolved()) {
+                    ui.statusText.textContent = '완료';
+                } else {
+                    ui.statusText.textContent = '진행 중';
+                }
+            } else {
+                if (!state.timerRunning) {
+                    ui.timerDisplay.textContent = '00:00.00';
+                }
+                if (!state.attemptActive) {
+                    ui.statusText.textContent = '대회 준비';
+                }
+            }
+        }
+
+        function startTimer() {
+            if (state.timerRunning) return;
+            state.timerRunning = true;
+            state.timerStart = performance.now();
+            state.lastKnownMs = 0;
+
+            const tick = (now) => {
+                if (!state.timerRunning) return;
+                state.lastKnownMs = now - state.timerStart;
+                ui.timerDisplay.textContent = formatTime(state.lastKnownMs);
+                state.timerLoop = requestAnimationFrame(tick);
+            };
+
+            state.timerLoop = requestAnimationFrame(tick);
+        }
+
+        function stopTimer() {
+            if (state.timerLoop) {
+                cancelAnimationFrame(state.timerLoop);
+                state.timerLoop = null;
+            }
+            state.timerRunning = false;
+        }
+
+        function handleCubeStateChange(event) {
+            if (state.mode === 'competition') {
+                switch (state.competition.phase) {
+                    case 'covered':
+                        ui.statusText.textContent = '대회 준비';
+                        break;
+                    case 'hold':
+                        ui.statusText.textContent = '준비 중 (홀드)';
+                        break;
+                    case 'inspection':
+                        ui.statusText.textContent = '검사 중';
+                        break;
+                    case 'solving':
+                        ui.statusText.textContent = '솔빙 중';
+                        break;
+                    case 'failed':
+                        ui.statusText.textContent = '도전 실패';
+                        break;
+                    default:
+                        ui.statusText.textContent = event.solved ? '대회 준비' : '진행 중';
+                        break;
+                }
+            } else {
+                ui.statusText.textContent = event.solved ? '완료' : '진행 중';
+            }
+            ui.moveCount.textContent = event.moves;
+
+            if (event.source === 'scramble') {
+                ui.scrambleLength.textContent = `${state.scrambleSequence.length} 수`;
+                ui.scrambleSequence.textContent = state.scrambleSequence.join(' ');
+            }
+
+            if (!event.solved && event.source === 'scramble') {
+                state.attemptActive = state.mode === 'competition';
+            }
+        }
+
+        function handleCubeMove(event) {
+            ui.moveCount.textContent = event.moves;
+            if (state.mode === 'competition' && state.attemptActive && !state.timerRunning) {
+                startTimer();
+            }
+        }
+
+        function handleCubeUnsolved() {
+            if (state.mode === 'competition' && state.attemptActive) {
+                ui.statusText.textContent = '진행 중';
+            }
+        }
+
+        function handleCubeSolved(event) {
+            if (state.mode === 'competition') {
+                stopTimer();
+                if (state.competition.phase !== 'solving') {
+                    return;
+                }
+                state.attemptActive = false;
+                state.allowCubeInteraction = false;
+                state.competition.phase = 'finished';
+
+                let finalTimeMs = state.lastKnownMs;
+                if (state.competition.penalty === 2) {
+                    finalTimeMs += 2000;
+                }
+
+                if (state.competition.penalty === 2) {
+                    ui.timerDisplay.textContent = formatTime(finalTimeMs) + ' (+2)';
+                }
+
+                const entry = {
+                    id: Date.now(),
+                    timeMs: finalTimeMs,
+                    penalty: state.competition.penalty,
+                    dnf: false,
+                    moves: event.moves,
+                    scramble: state.scrambleSequence.join(' '),
+                    date: new Date().toLocaleString()
+                };
+
+                state.leaderboard.push(entry);
+                state.leaderboard.sort((a, b) => a.timeMs - b.timeMs);
+                state.leaderboard = state.leaderboard.slice(0, 10);
+                persistLeaderboard();
+                renderLeaderboard();
+
+                showCompetitionOverlay('기록 저장', `이번 기록: ${formatTime(finalTimeMs)}${state.competition.penalty === 2 ? ' (+2)' : ''}`);
+                setTimeout(() => {
+                    hideCompetitionOverlay();
+                    if (state.mode === 'competition') {
+                        prepareCompetitionRound();
+                    }
+                }, 3000);
+                ui.statusText.textContent = '대회 준비';
+                return;
+            }
+
+            ui.statusText.textContent = '완료';
+        }
+
+        function handleRotationSpeedChange(event) {
+            const value = Number(event.target.value);
+            if (Number.isNaN(value)) {
+                return;
+            }
+            const clamped = Math.min(600, Math.max(120, value));
+            state.rotationDuration = clamped;
+            updateRotationSpeedLabel(clamped);
+            if (state.cube) {
+                state.cube.setRotationDuration(clamped);
+            }
+        }
+
+        function handleScramble() {
+            if (!state.cube) return;
+            if (state.isMobile) toggleMobileMenu(false);
+            setControlsDisabled(true);
+            ui.statusText.textContent = '섞는 중...';
+            ui.scrambleSequence.textContent = '스크램블 중입니다...';
+
+            const scrambleLength = state.mode === 'competition' ? 25 : 20;
+
+            state.cube.resetOrientation();
+            state.cube.shuffle(scrambleLength).then(sequence => {
+                state.scrambleSequence = sequence;
+                state.cube.clearUserHistory();
+                ui.scrambleLength.textContent = `${sequence.length} 수`;
+                ui.scrambleSequence.textContent = sequence.join(' ');
+                ui.statusText.textContent = state.mode === 'competition' ? '준비 완료' : '섞기 완료';
+                setControlsDisabled(false);
+
+                if (state.mode === 'competition') {
+                    stopTimer();
+                    ui.timerDisplay.textContent = '00:00.00';
+                    state.attemptActive = true;
+                    state.timerRunning = false;
+                    state.lastKnownMs = 0;
+                    state.cube.clearUserHistory();
+                    ui.moveCount.textContent = '0';
+                }
+            }).catch(() => {
+                ui.statusText.textContent = '섞기 실패';
+                setControlsDisabled(false);
+            });
+        }
+
+        function handleReset() {
+            if (!state.cube) return;
+            if (state.isMobile) toggleMobileMenu(false);
+            stopTimer();
+            state.lastKnownMs = 0;
+            ui.timerDisplay.textContent = '00:00.00';
+            state.scrambleSequence = [];
+            ui.scrambleSequence.textContent = '스크램블을 실행하면 수열이 표시됩니다.';
+            ui.scrambleLength.textContent = '-';
+            state.attemptActive = false;
+            state.cube.reset().then(() => {
+                ui.moveCount.textContent = '0';
+                ui.statusText.textContent = '완료';
+                setControlsDisabled(false);
+            });
+        }
+
+        function handleUndo() {
+            if (!state.cube) return;
+            if (state.isMobile) toggleMobileMenu(false);
+            state.cube.undoLastMove().then(success => {
+                if (success && state.mode === 'competition' && !state.cube.isSolved()) {
+                    // keep timer running until solved
+                }
+            });
+        }
+
+        function handleMobileFaceButton(event) {
+            if (!state.cube) return;
+            if (!state.allowCubeInteraction) return;
+            const target = event.currentTarget;
+            const face = target.dataset.face;
+            const ccw = target.dataset.ccw === 'true';
+            if (!face) return;
+            state.cube.rotateFace(face, ccw, { source: 'user', recordHistory: true });
+        }
+
+        function bindEvents() {
+            ui.scrambleBtn.addEventListener('click', handleScramble);
+            ui.resetBtn.addEventListener('click', handleReset);
+            ui.undoBtn.addEventListener('click', handleUndo);
+            ui.clearLeaderboard.addEventListener('click', () => {
+                state.leaderboard = [];
+                persistLeaderboard();
+                renderLeaderboard();
+            });
+
+            ui.modeButtons.normal.addEventListener('click', () => setMode('normal'));
+            ui.modeButtons.competition.addEventListener('click', () => setMode('competition'));
+
+            if (ui.rotationSlider) {
+                ui.rotationSlider.addEventListener('input', handleRotationSpeedChange);
+            }
+
+            document.querySelectorAll('.mobile-face-btn').forEach(button => {
+                button.addEventListener('click', handleMobileFaceButton);
+            });
+
+            if (ui.mobileMenuToggle) {
+                ui.mobileMenuToggle.addEventListener('click', () => toggleMobileMenu());
+            }
+
+            document.addEventListener('keydown', event => {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    handleCompetitionSpaceDown();
+                }
+            });
+
+            document.addEventListener('keyup', event => {
+                if (event.code === 'Space') {
+                    event.preventDefault();
+                    handleCompetitionSpaceUp();
+                }
+            });
+        }
+
+        function initialize() {
+            state.cube = new RubiksCube({
+                onStateChange: handleCubeStateChange,
+                onMove: handleCubeMove,
+                onSolved: handleCubeSolved,
+                onUnsolved: handleCubeUnsolved,
+                onViewChange: ({ row, col }) => updateViewGuideActive(row, col),
+                rotationDuration: state.rotationDuration
+            });
+            buildViewGuideOverlay();
+            updateViewGuideActive(state.cube.viewRow, state.cube.viewCol);
+            if (ui.rotationSlider) {
+                ui.rotationSlider.value = String(state.rotationDuration);
+            }
+            updateRotationSpeedLabel(state.rotationDuration);
+            updateResponsiveUI();
+            renderLeaderboard();
+            setMode('normal');
+            bindEvents();
+            ui.statusText.textContent = '완료';
+        }
+
+        if (typeof THREE === 'undefined') {
+            console.error('three.js를 불러오지 못했습니다. CDN 연결을 확인하세요.');
+        } else {
+            window.addEventListener('load', initialize);
+            window.addEventListener('resize', updateResponsiveUI);
+        }
+    </script>
+</body>
+</html>
