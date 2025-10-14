@@ -834,7 +834,7 @@
 
                 <div class="keyboard-visual">
                     <div class="keyboard-hand">
-                        <div class="keyboard-label">← Left Hand (Clockwise)</div>
+                        <div class="keyboard-label" id="keyboard-left-label">← Left Hand (Clockwise)</div>
                         <div class="keyboard-row">
                             <div class="key clockwise">
                                 <div class="key-letter">Q</div>
@@ -866,7 +866,7 @@
                     </div>
 
                     <div class="keyboard-hand">
-                        <div class="keyboard-label">Right Hand (Counter-clockwise) →</div>
+                        <div class="keyboard-label" id="keyboard-right-label">Right Hand (Counter-clockwise) →</div>
                         <div class="keyboard-row">
                             <div class="key counter-clockwise">
                                 <div class="key-letter">U</div>
@@ -2006,6 +2006,8 @@ let currentLanguage = DEFAULT_LANGUAGE;
             setElementText(document.getElementById('speed-fast-label'), 'speed_fast');
             setElementText(document.getElementById('speed-slow-label'), 'speed_slow');
             setElementText(document.getElementById('language-select-label'), 'language_label');
+            setElementText(document.getElementById('keyboard-left-label'), 'keyboard_left_label');
+            setElementText(document.getElementById('keyboard-right-label'), 'keyboard_right_label');
             setElementText(document.getElementById('instruction-title'), 'instruction_title');
             setElementText(document.getElementById('instruction-face'), 'instruction_face_controls');
             setElementText(document.getElementById('instruction-left'), 'instruction_left_keys');
