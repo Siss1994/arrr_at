@@ -136,53 +136,55 @@
         }
 
         .instruction-block {
-            margin-top: 14px;
-            padding: 12px;
-            border-radius: 10px;
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
             background: rgba(15, 19, 30, 0.6);
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 10px;
+            line-height: 1.4;
             color: rgba(230, 235, 255, 0.85);
         }
 
         .instruction-block strong {
             display: block;
-            font-size: 13px;
-            margin-bottom: 6px;
+            font-size: 11px;
+            margin-bottom: 5px;
             color: rgba(255, 255, 255, 0.95);
         }
 
         .keyboard-visual {
             display: flex;
-            gap: 20px;
+            gap: 12px;
             justify-content: center;
-            margin: 16px 0 8px 0;
-            flex-wrap: wrap;
+            margin: 12px 0 6px 0;
+            flex-wrap: nowrap;
         }
 
         .keyboard-hand {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             align-items: center;
+            flex: 1;
         }
 
         .keyboard-label {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: bold;
             color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
+            text-align: center;
         }
 
         .keyboard-row {
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
 
         .key {
-            width: 42px;
-            height: 42px;
-            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            border-radius: 5px;
             background: linear-gradient(145deg, rgba(60, 70, 100, 0.5), rgba(40, 50, 80, 0.6));
             border: 1px solid rgba(255, 255, 255, 0.15);
             display: flex;
@@ -203,13 +205,13 @@
         }
 
         .key-letter {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .key-face {
-            font-size: 10px;
+            font-size: 8px;
             color: rgba(180, 200, 255, 0.85);
         }
 
@@ -306,31 +308,42 @@
         }
 
         .language-selector {
-            margin-top: 16px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
             display: flex;
-            flex-direction: column;
-            gap: 6px;
+            align-items: center;
+            gap: 8px;
         }
 
         .language-selector label {
-            font-size: 12px;
-            color: rgba(220, 225, 245, 0.8);
+            font-size: 11px;
+            color: rgba(220, 225, 245, 0.9);
+            font-weight: 500;
         }
 
         .language-selector select {
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: rgba(255, 255, 255, 0.08);
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(15, 19, 32, 0.8);
             color: #f5f7ff;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .language-selector select:focus {
             outline: none;
-            border-color: rgba(110, 180, 255, 0.6);
-            box-shadow: 0 0 0 2px rgba(110, 180, 255, 0.25);
+            border-color: rgba(110, 180, 255, 0.7);
+            box-shadow: 0 0 0 2px rgba(110, 180, 255, 0.3);
+        }
+
+        .language-selector select:hover {
+            background: rgba(25, 29, 42, 0.9);
+            border-color: rgba(255, 255, 255, 0.35);
         }
 
         .mobile-face-controls {
@@ -765,6 +778,11 @@
 <body>
     <div id="scene-container"></div>
 
+    <div class="language-selector">
+        <label for="language-select" id="language-select-label">Language</label>
+        <select id="language-select"></select>
+    </div>
+
     <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-expanded="false" aria-controls="hud" data-expanded="false">
         Open Menu
     </button>
@@ -802,19 +820,13 @@
 
             <div class="speed-control">
                 <label for="rotation-speed" id="rotation-speed-label">
-                    Rotation Speed
-                    <span id="rotation-speed-value">0.26s</span>
+                    Speed: <span id="rotation-speed-value">50</span>
                 </label>
-                <input type="range" id="rotation-speed" min="120" max="600" step="20" value="260">
+                <input type="range" id="rotation-speed" min="0" max="100" step="1" value="55">
                 <div class="speed-hint">
                     <span id="speed-fast-label">Faster</span>
                     <span id="speed-slow-label">Slower</span>
                 </div>
-            </div>
-
-            <div class="language-selector">
-                <label for="language-select" id="language-select-label">Language</label>
-                <select id="language-select"></select>
             </div>
 
             <div class="instruction-block">
@@ -1437,11 +1449,21 @@ let currentLanguage = DEFAULT_LANGUAGE;
 
             initControls() {
                 const dom = this.renderer.domElement;
+                const MIN_DISTANCE = 4;  // Minimum zoom in distance
+                const MAX_DISTANCE = 15; // Maximum zoom out distance
 
                 dom.addEventListener('wheel', event => {
                     event.preventDefault();
                     const scale = event.deltaY > 0 ? 1.08 : 0.92;
-                    this.camera.position.multiplyScalar(scale);
+
+                    // Calculate new position
+                    const currentDistance = this.camera.position.length();
+                    const newDistance = currentDistance * scale;
+
+                    // Apply zoom only if within limits
+                    if (newDistance >= MIN_DISTANCE && newDistance <= MAX_DISTANCE) {
+                        this.camera.position.multiplyScalar(scale);
+                    }
                 }, { passive: false });
 
                 document.addEventListener('keydown', event => {
@@ -1856,10 +1878,9 @@ let currentLanguage = DEFAULT_LANGUAGE;
             return `${pad(minutes)}:${pad(seconds)}.${pad(hundredths)}`;
         }
 
-        function updateRotationSpeedLabel(ms) {
-            const seconds = (ms / 1000).toFixed(2);
+        function updateRotationSpeedLabel(speedValue) {
             if (ui.rotationSpeedValue) {
-                ui.rotationSpeedValue.textContent = `${seconds}${t('speed_unit_suffix')}`;
+                ui.rotationSpeedValue.textContent = Math.round(speedValue);
             }
         }
 
@@ -2006,7 +2027,10 @@ let currentLanguage = DEFAULT_LANGUAGE;
             setElementText(document.getElementById('leaderboard-title'), 'leaderboard_title');
             setElementText(ui.clearLeaderboard, 'leaderboard_clear');
             populateLanguageSelector();
-            updateRotationSpeedLabel(state.rotationDuration);
+            // Update speed label based on current slider value
+            if (ui.rotationSlider) {
+                updateRotationSpeedLabel(Number(ui.rotationSlider.value));
+            }
             applyModeUI();
             renderLeaderboard();
             syncMobileMenuButton();
@@ -2532,9 +2556,9 @@ let currentLanguage = DEFAULT_LANGUAGE;
             ui.competitionHint.classList.toggle('hidden', mode !== 'competition');
             applyModeUI();
             if (mode === 'competition') {
-                // Set rotation speed to maximum (60ms) for competition mode
+                // Set rotation speed to maximum (100 = fastest) for competition mode
                 if (ui.rotationSlider) {
-                    ui.rotationSlider.value = 60;
+                    ui.rotationSlider.value = 100;
                     handleRotationSpeedChange({ target: ui.rotationSlider });
                 }
                 prepareCompetitionRound();
@@ -2703,13 +2727,15 @@ let currentLanguage = DEFAULT_LANGUAGE;
         }
 
         function handleRotationSpeedChange(event) {
-            const value = Number(event.target.value);
-            if (Number.isNaN(value)) {
+            const speedValue = Number(event.target.value);
+            if (Number.isNaN(speedValue)) {
                 return;
             }
-            const clamped = Math.min(600, Math.max(120, value));
+            // Convert 0-100 scale to milliseconds (100 = fastest = 60ms, 0 = slowest = 600ms)
+            const durationMs = 600 - (speedValue * 5.4);
+            const clamped = Math.min(600, Math.max(60, durationMs));
             state.rotationDuration = clamped;
-            updateRotationSpeedLabel(clamped);
+            updateRotationSpeedLabel(speedValue);
             if (state.cube) {
                 state.cube.setRotationDuration(clamped);
             }
@@ -2859,9 +2885,10 @@ let currentLanguage = DEFAULT_LANGUAGE;
             buildViewGuideOverlay();
             updateViewGuideActive(state.cube.viewRow, state.cube.viewCol);
             if (ui.rotationSlider) {
-                ui.rotationSlider.value = String(state.rotationDuration);
+                // Set initial slider to value 55 (5% faster than default 50)
+                ui.rotationSlider.value = '55';
+                handleRotationSpeedChange({ target: ui.rotationSlider });
             }
-            updateRotationSpeedLabel(state.rotationDuration);
             updateResponsiveUI();
             renderLeaderboard();
             bindEvents();
