@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>광물캐기 RPG</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a1a1a;
+  font-family: 'Courier New', monospace;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  color: #fff;
+  padding: 50px 0;
+  overflow: hidden;
+  touch-action: none;
+}
+#game {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  background: #000;
+  border: 2px solid #333;
+  overflow: visible;
+}
+@media (max-width: 1000px) {
+  body { padding: 10px; }
+  #game {
+    width: 100vw;
+    height: 100vw;
+    max-width: 100vw;
+    border: none;
+  }
+}
+canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+#ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#ui > * { pointer-events: auto; }
+.hud {
+  position: absolute;
+  top: -90px;
+  left: -2px;
+  width: calc(100% + 4px);
+  padding: 12px;
+  background: rgba(42,42,42,0.95);
+  font-size: 14px;
+  pointer-events: none;
+  border: 2px solid #333;
+  border-bottom: none;
+}
+@media (max-width: 1000px) {
+  .hud {
+    top: 0;
+    left: 0;
+    width: 100%;
+    font-size: 11px;
+    padding: 8px;
+    border: none;
+    border-bottom: 2px solid #333;
+    position: fixed;
+    z-index: 1000;
+  }
+}
+.hud-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+.exp-bar { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 3px; }
+.exp-fill { height: 100%; background: linear-gradient(to right, #4169e1, #00ffff); transition: width 0.3s; }
+.info { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 10px; border-radius: 6px; font-size: 10px; pointer-events: none; }
+.menu { position: absolute; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; align-items: center; gap: 12px; }
+.menu.show { display: flex; }
+.title { font-size: 24px; font-weight: 700; }
+.btns { display: flex; flex-direction: column; gap: 10px; }
+.btn { background: #4169e1; color: #fff; border: none; padding: 10px 30px; font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; font-family: inherit; min-width: 200px; transition: transform 0.1s; }
+.btn:hover { transform: scale(1.05); }
+.btn:active { transform: scale(0.95); }
+.btn:disabled { background: #555; cursor: not-allowed; opacity: 0.5; }
+.btn-g { background: #228b22; }
+.btn-y { background: #ffd700; color: #000; }
+.btn-r { background: #dc143c; }
+.modal { position: absolute; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; justify-content: center; align-items: center; gap: 12px; }
+.modal.show { display: flex; }
+.modal-box { background: #2a2a2a; border: 2px solid #ffd700; border-radius: 10px; padding: 20px; max-width: 480px; max-height: 80%; overflow-y: auto; }
+.modal-title { font-size: 20px; font-weight: 700; text-align: center; margin-bottom: 12px; }
+.modal-content { display: flex; flex-direction: column; gap: 8px; }
+.item { background: #333; padding: 8px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.mining { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.95); padding: 18px 25px; border-radius: 10px; display: none; flex-direction: column; gap: 12px; align-items: center; min-width: 280px; border: 2px solid #ffd700; }
+.mining.show { display: flex; }
+.m-info { font-size: 16px; font-weight: 700; }
+.hp-bar { width: 240px; height: 18px; background: #333; border-radius: 3px; overflow: hidden; position: relative; }
+.hp-fill { height: 100%; background: linear-gradient(to right, #ff0000, #ffff00, #00ff00); transition: width 0.3s; }
+.hp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: 700; color: #fff; text-shadow: 1px 1px 2px #000; }
+.dmg { font-size: 14px; color: #ff8800; font-weight: 700; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: #333; padding: 10px; border-radius: 6px; }
+.stat-name { font-size: 11px; color: #aaa; margin-bottom: 4px; }
+.stat-val { font-size: 14px; font-weight: 700; color: #ffd700; }
+.stat-btn { background: #4169e1; color: #fff; border: none; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 3px; cursor: pointer; margin-top: 6px; }
+.stat-btn:disabled { background: #555; cursor: not-allowed; }
+.points { text-align: center; font-size: 16px; font-weight: 700; color: #00ff00; margin-bottom: 10px; }
+.touch-controls {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+.touch-controls > * { pointer-events: auto; }
+.dpad {
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  display: grid;
+  grid-template-areas: ". up ." "left center right" ". down .";
+  gap: 8px;
+}
+.d-btn {
+  width: 60px;
+  height: 60px;
+  background: rgba(65,105,225,0.5);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.d-btn:active { background: rgba(65,105,225,0.8); }
+.d-btn.up { grid-area: up; }
+.d-btn.down { grid-area: down; }
+.d-btn.left { grid-area: left; }
+.d-btn.right { grid-area: right; }
+.action-btns {
+  position: absolute;
+  bottom: 0;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.a-btn {
+  width: 70px;
+  height: 70px;
+  background: rgba(220,20,60,0.5);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.a-btn:active { background: rgba(220,20,60,0.8); }
+@media (max-width: 1000px) {
+  .touch-controls { display: block; }
+  .info { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="c" width="1000" height="1000"></canvas>
+  <div id="ui">
+    <div class="hud">
+      <div class="hud-row">
+        <span>Lv.<span id="lv">1</span></span>
+        <span>💰 <span id="gold">0</span>G</span>
+        <span>⚡ <span id="nrg">50</span>/<span id="maxNrg">50</span></span>
+        <span id="weather">☀️ 맑음</span>
+      </div>
+      <div class="hud-row">
+        <span>⛏️ <span id="pick">나무</span> (<span id="dur">∞</span>)</span>
+        <span>📦 <span id="inv">0</span>/30</span>
+      </div>
+      <div class="exp-bar"><div class="exp-fill" id="exp" style="width:0%"></div></div>
+    </div>
+    <div class="info" id="info">WASD: 이동 | SPACE: 행동 | S: 스탯 | I: 인벤 | ESC: 메뉴</div>
+
+    <div class="mining" id="mining">
+      <div class="m-info"><span id="mIcon">💎</span> <span id="mName">광물</span></div>
+      <div class="hp-bar"><div class="hp-fill" id="mHp" style="width:100%"></div><div class="hp-text" id="mTxt">100/100</div></div>
+      <div class="dmg" id="dmg">데미지: 0</div>
+    </div>
+
+    <div class="menu" id="menu">
+      <div class="title">📋 메뉴</div>
+      <div class="btns">
+        <button class="btn" onclick="g.closeMenu()">계속하기</button>
+        <button class="btn btn-g" onclick="g.openSub('home')">🏠 집</button>
+        <button class="btn btn-y" onclick="g.openSub('village')">🏘️ 마을</button>
+        <button class="btn" onclick="g.openSub('stats')">📊 스탯</button>
+        <button class="btn" onclick="g.openSub('shop')">🏪 상점</button>
+        <button class="btn" onclick="g.openSub('inv')">📦 인벤</button>
+        <button class="btn" onclick="g.openSub('wardrobe')">👔 옷장</button>
+        <button class="btn btn-r" onclick="g.save();alert('저장!');location.reload()">저장하고 나가기</button>
+      </div>
+    </div>
+
+    <div class="modal" id="stats">
+      <div class="modal-box">
+        <div class="modal-title">📊 스탯</div>
+        <div class="points">포인트: <span id="pts">0</span></div>
+        <div class="stats-grid">
+          <div class="stat"><div class="stat-name">최대 에너지</div><div class="stat-val" id="s1">50</div><button class="stat-btn" onclick="g.up('nrg')">+10 (1P)</button></div>
+          <div class="stat"><div class="stat-name">기본 공격력</div><div class="stat-val" id="s2">0</div><button class="stat-btn" onclick="g.up('atk')">+2 (1P)</button></div>
+          <div class="stat"><div class="stat-name">이동 속도</div><div class="stat-val" id="s3">1.0x</div><button class="stat-btn" onclick="g.up('spd')">+0.1x (1P)</button></div>
+          <div class="stat"><div class="stat-name">채굴 속도</div><div class="stat-val" id="s4">100%</div><button class="stat-btn" onclick="g.up('min')">+10% (1P)</button></div>
+          <div class="stat"><div class="stat-name">골드 배율</div><div class="stat-val" id="s5">1.0x</div><button class="stat-btn" onclick="g.up('gld')">+0.1x (1P)</button></div>
+          <div class="stat"><div class="stat-name">경험치 배율</div><div class="stat-val" id="s6">1.0x</div><button class="stat-btn" onclick="g.up('xp')">+0.1x (1P)</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="invModal">
+      <div class="modal-box">
+        <div class="modal-title">📦 인벤토리</div>
+        <div class="modal-content" id="invList"></div>
+      </div>
+    </div>
+
+    <div class="modal" id="shop">
+      <div class="modal-box">
+        <div class="modal-title">🏪 상점</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn" id="sellTab" onclick="g.shopTab('sell')">판매</button>
+          <button class="btn btn-g" id="buyTab" onclick="g.shopTab('buy')">구매</button>
+        </div>
+        <div class="modal-content" id="shopList"></div>
+      </div>
+    </div>
+
+    <div class="modal" id="wardrobe">
+      <div class="modal-box">
+        <div class="modal-title">👔 옷장</div>
+        <div class="modal-content">
+          <div style="margin-bottom:16px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:8px">💈 헤어스타일</div>
+            <div id="hairList" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:8px">👕 상의</div>
+            <div id="shirtList" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:8px">👖 하의</div>
+            <div id="pantsList" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="touch-controls">
+    <div class="dpad">
+      <div class="d-btn up" id="t-up">↑</div>
+      <div class="d-btn down" id="t-down">↓</div>
+      <div class="d-btn left" id="t-left">←</div>
+      <div class="d-btn right" id="t-right">→</div>
+    </div>
+    <div class="action-btns">
+      <div class="a-btn" id="t-menu">☰</div>
+      <div class="a-btn" id="t-action">⚡</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const M=[
+  {n:'석탄',i:'⚫',c:'#2a2a2a',h:20,d:0,p:3,x:2,t:1},
+  {n:'점토',i:'🟤',c:'#8b4513',h:25,d:0,p:4,x:2,t:1},
+  {n:'자갈',i:'⚪',c:'#999',h:30,d:0,p:2,x:1,t:1},
+  {n:'철광석',i:'🔳',c:'#666',h:80,d:5,p:12,x:5,t:2},
+  {n:'주석',i:'⬜',c:'#aaa',h:100,d:6,p:15,x:6,t:2},
+  {n:'황철석',i:'🟨',c:'#b8860b',h:120,d:8,p:18,x:7,t:2,w:'sun'},
+  {n:'구리',i:'🟧',c:'#cd7f32',h:250,d:15,p:40,x:15,t:3},
+  {n:'아연',i:'◼️',c:'#7f8c8d',h:280,d:18,p:45,x:17,t:3},
+  {n:'니켈',i:'◽',c:'#c0c0c0',h:320,d:20,p:50,x:20,t:3,w:'snow'},
+  {n:'은',i:'⚪',c:'#c0c0c0',h:600,d:30,p:120,x:40,t:4,w:'moon'},
+  {n:'티타늄',i:'💿',c:'#dcdcdc',h:700,d:35,p:140,x:45,t:4},
+  {n:'백금',i:'◻️',c:'#e5e4e2',h:850,d:40,p:170,x:55,t:4},
+  {n:'금',i:'🟡',c:'#ffd700',h:1500,d:50,p:400,x:100,t:5,w:'sun'},
+  {n:'자수정',i:'🟣',c:'#9966cc',h:1700,d:55,p:450,x:110,t:5},
+  {n:'비취',i:'🟢',c:'#00a86b',h:2000,d:60,p:520,x:130,t:5,w:'rain'},
+  {n:'다이아',i:'💎',c:'#b9f2ff',h:4000,d:100,p:1500,x:300,t:6},
+  {n:'에메랄드',i:'💚',c:'#50c878',h:4500,d:110,p:1700,x:330,t:6,w:'rain'},
+  {n:'루비',i:'❤️',c:'#e0115f',h:5000,d:120,p:1900,x:360,t:6,w:'sun'},
+  {n:'운석',i:'☄️',c:'#4a0080',h:12000,d:200,p:6000,x:800,t:7,w:'moon'},
+  {n:'미스릴',i:'✨',c:'#00ffff',h:18000,d:250,p:9000,x:1200,t:7,w:'snow'},
+  {n:'아다만',i:'🔷',c:'#0000cd',h:25000,d:300,p:12000,x:1600,t:7}
+];
+const P=[
+  {n:'나무',a:3,u:Infinity,m:Infinity,p:0,c:'#8b4513'},
+  {n:'돌',a:12,u:200,m:200,p:150,c:'#666'},
+  {n:'철',a:30,u:400,m:400,p:800,c:'#888'},
+  {n:'강철',a:60,u:600,m:600,p:4000,c:'#aaa'},
+  {n:'금',a:110,u:500,m:500,p:15000,c:'#ffd700'},
+  {n:'다이아',a:200,u:1000,m:1000,p:60000,c:'#00ffff'},
+  {n:'미스릴',a:400,u:2000,m:2000,p:250000,c:'#00ffaa'},
+  {n:'전설',a:800,u:Infinity,m:Infinity,p:1000000,c:'#ff00ff'}
+];
+const L=[
+  {l:1,n:'초원',x:2,y:8,t:[1],c:'#4a7c4a',v:1},
+  {l:2,n:'언덕',x:8,y:8,t:[1,2],c:'#7c6a4a',v:1},
+  {l:3,n:'산악',x:2,y:12,t:[2,3],c:'#6a6a6a',v:2},
+  {l:4,n:'심층',x:8,y:12,t:[3,4],c:'#4a4a6a',v:2},
+  {l:5,n:'화산',x:14,y:12,t:[4,5],c:'#8a3a3a',v:2},
+  {l:6,n:'수정',x:2,y:8,t:[5,6],c:'#6a4a8a',v:3},
+  {l:7,n:'유적',x:8,y:8,t:[6,7],c:'#2a2a4a',v:3},
+  {l:8,n:'심연',x:2,y:12,t:[6,7],c:'#1a1a3a',v:3},
+  {l:9,n:'천공',x:8,y:12,t:[6,7],c:'#3a1a4a',v:3}
+];
+const W_TYPES=[
+  {id:'sun',n:'☀️ 맑음'},
+  {id:'rain',n:'🌧️ 비'},
+  {id:'snow',n:'❄️ 눈'},
+  {id:'moon',n:'🌙 달밤'}
+];
+
+const HAIRSTYLES=[
+  {id:0,n:'기본',c:'#654321'},
+  {id:1,n:'금발',c:'#ffd700'},
+  {id:2,n:'흑발',c:'#1a1a1a'},
+  {id:3,n:'백발',c:'#e8e8e8'},
+  {id:4,n:'갈색',c:'#8b4513'},
+  {id:5,n:'빨강',c:'#dc143c'},
+  {id:6,n:'파랑',c:'#0066cc'},
+  {id:7,n:'초록',c:'#228b22'},
+  {id:8,n:'보라',c:'#8b00ff'},
+  {id:9,n:'분홍',c:'#ff69b4'}
+];
+
+const SHIRTS=[
+  {id:0,n:'작업복',c1:'#ff8800',c2:'#ff6600'},
+  {id:1,n:'기사갑옷',c1:'#c0c0c0',c2:'#a0a0a0'},
+  {id:2,n:'광부복',c1:'#8b4513',c2:'#654321'},
+  {id:3,n:'모험복',c1:'#228b22',c2:'#1a6b1a'},
+  {id:4,n:'마법사',c1:'#4169e1',c2:'#2a4a9a'},
+  {id:5,n:'암살자',c1:'#2c2c2c',c2:'#1a1a1a'},
+  {id:6,n:'성직자',c1:'#ffffff',c2:'#e8e8e8'},
+  {id:7,n:'해적',c1:'#dc143c',c2:'#8b0000'},
+  {id:8,n:'왕족',c1:'#9370db',c2:'#6a4a9a'},
+  {id:9,n:'상인',c1:'#daa520',c2:'#b8860b'}
+];
+
+const PANTS=[
+  {id:0,n:'작업바지',c:'#2c5aa0'},
+  {id:1,n:'갑옷바지',c:'#4a4a4a'},
+  {id:2,n:'광부바지',c:'#2c2c2c'},
+  {id:3,n:'모험바지',c:'#8b6914'},
+  {id:4,n:'마법바지',c:'#1a1a4a'},
+  {id:5,n:'암살바지',c:'#0a0a0a'},
+  {id:6,n:'성직바지',c:'#e8e8e8'},
+  {id:7,n:'해적바지',c:'#654321'},
+  {id:8,n:'왕족바지',c:'#4a2a6a'},
+  {id:9,n:'상인바지',c:'#556b2f'}
+];
+const T=55,W=18,H=18;
+
+class Game{
+  constructor(){
+    this.cv=document.getElementById('c');
+    this.cx=this.cv.getContext('2d');
+    this.sc='home';
+    this.vl=1;
+    this.ml=1;
+    this.p={x:9,y:9,d:'down',f:0,t:0,m:false,w:false};
+    this.lv=1;
+    this.xp=0;
+    this.nx=100;
+    this.sp=0;
+    this.st={nrg:50,atk:0,spd:1,min:1,gld:1,xpm:1};
+    this.g=0;
+    this.e=50;
+    this.inv=[];
+    this.pk={...P[0]};
+    this.mins=[];
+    this.tm=null;
+    this.mp=false;
+    this.mf=0;
+    this.k={};
+    this.ws=W_TYPES[0];
+    this.mstack=[];
+    this.outfit={hair:0,shirt:0,pants:0};
+
+    this.changeWeather();
+    setInterval(()=>this.changeWeather(),180000);
+
+    document.addEventListener('keydown',e=>{
+      this.k[e.key.toLowerCase()]=true;
+      if(e.key==' '||e.key=='Spacebar'){e.preventDefault();this.act();}
+      if(e.key=='Escape'){
+        e.preventDefault();
+        const anyOpen=document.getElementById('stats').classList.contains('show')||
+          document.getElementById('invModal').classList.contains('show')||
+          document.getElementById('shop').classList.contains('show')||
+          document.getElementById('wardrobe').classList.contains('show')||
+          document.getElementById('menu').classList.contains('show');
+        if(anyOpen)this.closeAll();
+        else this.toggleMenu();
+      }
+      if(e.key.toLowerCase()=='i'){e.preventDefault();if(!this.anyModalOpen())this.showInv();}
+      if(e.key.toLowerCase()=='s'){e.preventDefault();if(!this.anyModalOpen())this.showStats();}
+    });
+    document.addEventListener('keyup',e=>this.k[e.key.toLowerCase()]=false);
+
+    // Touch controls
+    const touchStart=(dir)=>()=>{this.k[dir]=true;};
+    const touchEnd=(dir)=>()=>{this.k[dir]=false;};
+
+    document.getElementById('t-up').addEventListener('touchstart',touchStart('w'));
+    document.getElementById('t-up').addEventListener('touchend',touchEnd('w'));
+    document.getElementById('t-down').addEventListener('touchstart',touchStart('s'));
+    document.getElementById('t-down').addEventListener('touchend',touchEnd('s'));
+    document.getElementById('t-left').addEventListener('touchstart',touchStart('a'));
+    document.getElementById('t-left').addEventListener('touchend',touchEnd('a'));
+    document.getElementById('t-right').addEventListener('touchstart',touchStart('d'));
+    document.getElementById('t-right').addEventListener('touchend',touchEnd('d'));
+
+    document.getElementById('t-action').addEventListener('touchstart',(e)=>{
+      e.preventDefault();
+      this.act();
+    });
+
+    document.getElementById('t-menu').addEventListener('touchstart',(e)=>{
+      e.preventDefault();
+      this.toggleMenu();
+    });
+
+    this.load();
+    this.chg('home');
+    requestAnimationFrame(()=>this.loop());
+    this.updateUI();
+  }
+
+  anyModalOpen(){
+    return document.getElementById('menu').classList.contains('show')||
+      document.getElementById('stats').classList.contains('show')||
+      document.getElementById('invModal').classList.contains('show')||
+      document.getElementById('shop').classList.contains('show')||
+      document.getElementById('wardrobe').classList.contains('show');
+  }
+
+  closeAll(){
+    document.getElementById('menu').classList.remove('show');
+    document.getElementById('stats').classList.remove('show');
+    document.getElementById('invModal').classList.remove('show');
+    document.getElementById('shop').classList.remove('show');
+    document.getElementById('wardrobe').classList.remove('show');
+    this.mstack=[];
+  }
+
+  changeWeather(){
+    this.ws=W_TYPES[Math.floor(Math.random()*W_TYPES.length)];
+    document.getElementById('weather').textContent=this.ws.n;
+    if(this.sc=='mine')this.genMin(this.ml);
+  }
+
+  chg(s,v=1,m=1,from=null){
+    const prevScene=this.sc;
+    this.sc=s;
+    this.vl=v;
+    this.ml=m;
+
+    // 씬별 캐릭터 위치 설정
+    if(s=='home'){
+      // 집으로 들어올 때 - 문 앞에 배치
+      if(prevScene=='village'){
+        this.p.x=9;
+        this.p.y=16;
+      }else{
+        this.p.x=9;
+        this.p.y=13;
+      }
+    }else if(s=='village'){
+      // 마을로 나갈 때
+      if(prevScene=='home'){
+        // 집에서 나오면 집(3,3) 앞에 배치
+        this.p.x=3;
+        this.p.y=5;
+      }else if(prevScene=='mine'){
+        // 광산에서 나오면 해당 광산 입구에 배치
+        const mine=L.find(l=>l.l==this.ml);
+        if(mine){
+          this.p.x=mine.x+1;
+          this.p.y=mine.y+3;
+        }else{
+          this.p.x=9;
+          this.p.y=9;
+        }
+      }else if(v==1&&prevScene=='village'){
+        // 마을2에서 마을1로
+        this.p.x=15;
+        this.p.y=14;
+      }else if(v==2&&prevScene=='village'){
+        // 마을1 or 3에서 마을2로
+        if(this.vl==1){
+          this.p.x=3;
+          this.p.y=5;
+        }else{
+          this.p.x=15;
+          this.p.y=5;
+        }
+      }else if(v==3&&prevScene=='village'){
+        // 마을2에서 마을3으로
+        this.p.x=15;
+        this.p.y=5;
+      }else{
+        this.p.x=9;
+        this.p.y=9;
+      }
+    }else if(s=='mine'){
+      // 광산으로 들어갈 때 - 출구 문 근처에 배치
+      this.p.x=1.5;
+      this.p.y=15;
+      this.genMin(m);
+    }else{
+      this.p.x=9;
+      this.p.y=9;
+    }
+
+    if(s=='mine'){
+      document.getElementById('info').textContent='WASD: 이동 | SPACE: 채굴/취소 | 문: 나가기 | ESC: 메뉴';
+    }else if(s=='village'){
+      document.getElementById('info').textContent='WASD: 이동 | SPACE: 입장 | ESC: 메뉴';
+    }else{
+      document.getElementById('info').textContent='WASD: 이동 | 침대: 휴식 | TV: 날씨 | 문: 마을 | ESC: 메뉴';
+    }
+  }
+
+  genMin(m){
+    this.mins=[];
+    const mine=L.find(l=>l.l==m)||L[0];
+    for(let i=0;i<30;i++){
+      const vm=M.filter(mm=>mine.t.includes(mm.t));
+      const min=vm[Math.floor(Math.random()*vm.length)];
+      const x=Math.floor(Math.random()*W);
+      const y=Math.floor(Math.random()*H);
+      if(Math.abs(x-this.p.x)<2&&Math.abs(y-this.p.y)<2)continue;
+      if(x==1&&y>=16&&y<=17)continue;
+      const buff=(min.w==this.ws.id)?1.5:1;
+      this.mins.push({...min,x,y,ch:min.h,id:Math.random(),buff});
+    }
+  }
+
+  update(){
+    if(this.mp){
+      this.mf++;
+      return;
+    }
+    if(this.anyModalOpen())return;
+    let dx=0,dy=0;
+    if(this.k.w||this.k.arrowup)dy=-1;
+    if(this.k.s||this.k.arrowdown)dy=1;
+    if(this.k.a||this.k.arrowleft)dx=-1;
+    if(this.k.d||this.k.arrowright)dx=1;
+
+    if(dx||dy){
+      const s=0.08*this.st.spd;
+      const nx=this.p.x+dx*s;
+      const ny=this.p.y+dy*s;
+      if(nx>=0&&nx<W&&ny>=0&&ny<H){
+        let ok=true;
+        if(this.sc=='mine'){
+          for(const m of this.mins){
+            const d=Math.sqrt((nx-m.x)**2+(ny-m.y)**2);
+            if(d<0.8){ok=false;break;}
+          }
+        }
+        if(this.sc=='home'){
+          if(nx>=7.2&&nx<=11.8&&ny>=7.2&&ny<=10.8)ok=false;
+          if(nx>=4.2&&nx<=5.8&&ny>=2.2&&ny<=4.8)ok=false;
+        }
+        if(ok){
+          this.p.x=nx;this.p.y=ny;this.p.m=true;
+          if(dx>0)this.p.d='right';
+          else if(dx<0)this.p.d='left';
+          else if(dy>0)this.p.d='down';
+          else if(dy<0)this.p.d='up';
+          this.p.t+=0.2*this.st.spd;
+          if(this.p.t>=1){this.p.f=(this.p.f+1)%4;this.p.t=0;}
+        }
+      }
+    }else this.p.m=false;
+  }
+
+  render(){
+    this.cx.fillStyle='#0a0a0a';
+    this.cx.fillRect(0,0,1000,1000);
+
+    if(this.sc=='home')this.rHome();
+    else if(this.sc=='village')this.rVillage();
+    else if(this.sc=='mine')this.rMine();
+
+    this.rPlayer();
+  }
+
+  rHome(){
+    this.cx.fillStyle='#2a1a0a';
+    this.cx.fillRect(0,0,1000,1000);
+    this.cx.strokeStyle='#3a2a1a';
+    for(let x=0;x<W;x++)for(let y=0;y<H;y++)this.cx.strokeRect(x*T,y*T,T,T);
+
+    this.cx.fillStyle='#6b4423';
+    this.cx.fillRect(0,0,600,T*3);
+    this.cx.fillRect(0,T*15,600,T*3);
+    this.cx.fillRect(0,0,T*3,600);
+    this.cx.fillRect(T*15,0,T*3,600);
+
+    this.cx.fillStyle='#8b4513';
+    this.cx.fillRect(7*T,7*T,T*5,T*4);
+    this.cx.fillStyle='#ff6b6b';
+    this.cx.fillRect(7*T+4,7*T+4,T*5-8,T*4-8);
+    this.cx.font='80px Arial';
+    this.cx.textAlign='center';
+    this.cx.textBaseline='middle';
+    this.cx.fillText('🛏️',9.5*T,9*T);
+
+    this.cx.fillStyle='#1a1a1a';
+    this.cx.fillRect(4*T,2*T,T*2,T*3);
+    this.cx.fillStyle='#333';
+    this.cx.fillRect(4*T+4,2*T+4,T*2-8,T*3-8);
+    this.cx.fillStyle='#4169e1';
+    this.cx.fillRect(4*T+8,2*T+8,T*2-16,T*2-16);
+    this.cx.font='18px Arial';
+    this.cx.fillStyle='#fff';
+    this.cx.fillText('TV',5*T,3*T);
+    this.cx.font='34px Arial';
+    this.cx.fillText(this.ws.n,5*T,4*T);
+
+    this.cx.fillStyle='#654321';
+    this.cx.fillRect(8*T,T*16,T*2,T*2);
+    this.cx.fillStyle='#8b4513';
+    this.cx.fillRect(8*T+4,T*16+4,T*2-8,T*2-8);
+    this.cx.font='54px Arial';
+    this.cx.textAlign='center';
+    this.cx.textBaseline='middle';
+    this.cx.fillStyle='#000';
+    this.cx.fillText('🚪',9*T,17*T);
+    this.cx.font='20px Arial';
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillText('마을',9*T,17.8*T);
+  }
+
+  rVillage(){
+    this.cx.fillStyle='#1a2a1a';
+    this.cx.fillRect(0,0,1000,1000);
+    this.cx.strokeStyle='#2a3a2a';
+    for(let x=0;x<W;x++)for(let y=0;y<H;y++)this.cx.strokeRect(x*T,y*T,T,T);
+    this.cx.fillStyle='#6a5a4a';
+    for(let y=4;y<15;y++)for(let x=0;x<W;x++)this.cx.fillRect(x*T+8,y*T+12,T-16,T-24);
+
+    if(this.vl==1){
+      this.cx.fillStyle='#654321';
+      this.cx.fillRect(2*T,2*T,T*2,T*2);
+      this.cx.fillStyle='#8b4513';
+      this.cx.fillRect(2*T+4,2*T+4,T*2-8,T*2-8);
+      this.cx.font='54px Arial';
+      this.cx.fillStyle='#000';
+      this.cx.fillText('🏠',3*T,3*T);
+      this.cx.font='18px Arial';
+      this.cx.fillStyle='#ffd700';
+      this.cx.fillText('집',3*T,3.8*T);
+
+      this.cx.fillStyle='#b8860b';
+      this.cx.fillRect(14*T,2*T,T*2,T*2);
+      this.cx.fillStyle='#000';
+      this.cx.fillRect(14*T+8,2*T+8,T*2-16,T*2-16);
+      this.cx.font='40px Arial';
+      this.cx.fillStyle='#fff';
+      this.cx.fillText('🏪',15*T,3*T);
+      this.cx.font='18px Arial';
+      this.cx.fillStyle='#ffd700';
+      this.cx.fillText('상점',15*T,3.8*T);
+
+      this.cx.fillStyle='#4169e1';
+      this.cx.fillRect(14*T,14*T,T*2,T*2);
+      this.cx.fillStyle='#000';
+      this.cx.fillRect(14*T+8,14*T+8,T*2-16,T*2-16);
+      this.cx.font='54px Arial';
+      this.cx.fillStyle='#fff';
+      this.cx.fillText('🚪',15*T,15*T);
+      this.cx.font='18px Arial';
+      this.cx.fillStyle='#ffd700';
+      this.cx.fillText('마을2',15*T,15.8*T);
+    }else if(this.vl==2){
+      this.cx.fillStyle='#4169e1';
+      this.cx.fillRect(2*T,2*T,T*2,T*2);
+      this.cx.fillStyle='#000';
+      this.cx.fillRect(2*T+8,2*T+8,T*2-16,T*2-16);
+      this.cx.font='54px Arial';
+      this.cx.fillStyle='#fff';
+      this.cx.fillText('🚪',3*T,3*T);
+      this.cx.font='18px Arial';
+      this.cx.fillStyle='#ffd700';
+      this.cx.fillText('마을1',3*T,3.8*T);
+
+      this.cx.fillStyle='#4169e1';
+      this.cx.fillRect(14*T,2*T,T*2,T*2);
+      this.cx.fillStyle='#000';
+      this.cx.fillRect(14*T+8,2*T+8,T*2-16,T*2-16);
+      this.cx.font='54px Arial';
+      this.cx.fillStyle='#fff';
+      this.cx.fillText('🚪',15*T,3*T);
+      this.cx.font='18px Arial';
+      this.cx.fillStyle='#ffd700';
+      this.cx.fillText('마을3',15*T,3.8*T);
+    }else if(this.vl==3){
+      this.cx.fillStyle='#4169e1';
+      this.cx.fillRect(14*T,2*T,T*2,T*2);
+      this.cx.fillStyle='#000';
+      this.cx.fillRect(14*T+8,2*T+8,T*2-16,T*2-16);
+      this.cx.font='54px Arial';
+      this.cx.fillStyle='#fff';
+      this.cx.fillText('🚪',15*T,3*T);
+      this.cx.font='18px Arial';
+      this.cx.fillStyle='#ffd700';
+      this.cx.fillText('마을2',15*T,3.8*T);
+    }
+
+    L.filter(l=>l.v==this.vl).forEach(l=>{
+      const px=l.x*T,py=l.y*T;
+      this.cx.fillStyle=l.c;
+      this.cx.fillRect(px,py,T*2,T*2);
+      this.cx.fillStyle='#000';
+      this.cx.fillRect(px+8,py+8,T*2-16,T*2-16);
+      this.cx.font='40px Arial';
+      this.cx.textAlign='center';
+      this.cx.textBaseline='middle';
+      this.cx.fillStyle='#fff';
+      this.cx.fillText('⛏️',px+T,py+T);
+      this.cx.font='16px Arial';
+      this.cx.fillText('Lv'+l.l,px+T,py-10);
+    });
+  }
+
+  rMine(){
+    this.cx.fillStyle='#1a1a0a';
+    this.cx.fillRect(0,0,1000,1000);
+    this.cx.strokeStyle='#2a2a1a';
+    for(let x=0;x<W;x++)for(let y=0;y<H;y++)this.cx.strokeRect(x*T,y*T,T,T);
+
+    this.cx.fillStyle='#654321';
+    this.cx.fillRect(T,T*16,T,T*2);
+    this.cx.fillStyle='#8b4513';
+    this.cx.fillRect(T+4,T*16+4,T-8,T*2-8);
+    this.cx.font='24px Arial';
+    this.cx.textAlign='center';
+    this.cx.textBaseline='middle';
+    this.cx.fillStyle='#000';
+    this.cx.fillText('🚪',T+T/2,T*17);
+
+    this.mins.forEach(m=>{
+      const px=m.x*T,py=m.y*T;
+      this.cx.fillStyle='rgba(0,0,0,0.3)';
+      this.cx.fillRect(px+4,py+48,T-8,6);
+      this.cx.fillStyle=m.c;
+      this.cx.fillRect(px+4,py+4,T-8,T-8);
+      if(m.buff>1){
+        this.cx.fillStyle='rgba(255,215,0,0.4)';
+        this.cx.fillRect(px+4,py+4,T-8,T-8);
+      }
+      this.cx.fillStyle='rgba(255,255,255,0.3)';
+      this.cx.fillRect(px+8,py+8,12,12);
+      this.cx.font='34px Arial';
+      this.cx.textAlign='center';
+      this.cx.textBaseline='middle';
+      this.cx.fillText(m.i,px+T/2,py+T/2);
+      if(m.ch<m.h){
+        const hp=m.ch/m.h;
+        this.cx.fillStyle='#000';
+        this.cx.fillRect(px,py-10,T,6);
+        this.cx.fillStyle=hp>0.5?'#0f0':hp>0.25?'#ff0':'#f00';
+        this.cx.fillRect(px,py-10,T*hp,6);
+      }
+      if(m.buff>1){
+        this.cx.font='20px Arial';
+        this.cx.fillStyle='#ffd700';
+        this.cx.fillText('⬆',px+T-10,py+10);
+      }
+    });
+  }
+
+  rPlayer(){
+    const px=this.p.x*T,py=this.p.y*T;
+    const dir=this.p.d;
+
+    // 그림자
+    this.cx.fillStyle='rgba(0,0,0,0.3)';
+    this.cx.fillRect(px+12,py+48,30,4);
+
+    // 다리 애니메이션
+    let l=0;
+    if(this.p.m)l=(this.p.f%2==0)?-3:3;
+
+    if(dir=='down')this.drawDown(px,py,l);
+    else if(dir=='up')this.drawUp(px,py,l);
+    else if(dir=='left')this.drawLeft(px,py,l);
+    else if(dir=='right')this.drawRight(px,py,l);
+  }
+
+  drawDown(px,py,l){
+    const hair=HAIRSTYLES[this.outfit.hair]||HAIRSTYLES[0];
+    const shirt=SHIRTS[this.outfit.shirt]||SHIRTS[0];
+    const pants=PANTS[this.outfit.pants]||PANTS[0];
+    const skin='#ffcc99';
+
+    // 다리
+    this.cx.fillStyle=pants.c;
+    this.cx.fillRect(px+18,py+42+l,7,12);
+    this.cx.fillRect(px+29,py+42-l,7,12);
+    this.cx.fillStyle='#8b6914';
+    this.cx.fillRect(px+18,py+50+l,7,4);
+    this.cx.fillRect(px+29,py+50-l,7,4);
+    // 몸통
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+16,py+22,22,22);
+    this.cx.fillStyle=shirt.c2;
+    this.cx.fillRect(px+16,py+36,22,4);
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+25,py+36,4,4);
+    this.cx.fillStyle=shirt.c2;
+    this.cx.fillRect(px+16,py+22,6,4);
+    this.cx.fillRect(px+32,py+22,6,4);
+    // 목
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+22,py+18,10,6);
+    // 얼굴
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+18,py+8,18,18);
+    this.cx.fillStyle=hair.c;
+    this.cx.fillRect(px+16,py+4,22,8);
+    this.cx.fillRect(px+18,py+6,18,4);
+    // 눈썹
+    this.cx.fillStyle=hair.c;
+    this.cx.fillRect(px+20,py+12,4,2);
+    this.cx.fillRect(px+30,py+12,4,2);
+    // 눈
+    this.cx.fillStyle='#fff';
+    this.cx.fillRect(px+20,py+14,4,4);
+    this.cx.fillRect(px+30,py+14,4,4);
+    this.cx.fillStyle='#000';
+    this.cx.fillRect(px+21,py+15,2,2);
+    this.cx.fillRect(px+31,py+15,2,2);
+    // 코
+    this.cx.fillStyle='#ffaa77';
+    this.cx.fillRect(px+26,py+18,2,3);
+    // 입
+    this.cx.fillStyle='#cc6666';
+    this.cx.fillRect(px+24,py+22,6,2);
+    // 헬멧
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+18,py+4,18,4);
+    this.cx.fillRect(px+20,py+6,14,2);
+    this.cx.fillStyle='#ffff00';
+    this.cx.fillRect(px+25,py+4,4,2);
+    this.cx.fillStyle='#fff';
+    this.cx.fillRect(px+26,py+4,2,1);
+    // 팔
+    if(this.p.w){
+      // 곡괭이질 애니메이션 - 회전 (10단계)
+      const phase=(this.mf/3)%10;
+      let rotAngle=0;
+
+      if(phase<=6){
+        // 0~60%: 준비 자세(-50deg) -> 내리찍기(80deg) - ease-in
+        const t=phase/6;
+        const eased=t*t;
+        rotAngle=-50+eased*130;
+      }else{
+        // 60~100%: 내리찍기(80deg) -> 준비 자세(-50deg) - ease-out
+        const t=(phase-6)/4;
+        const eased=1-Math.pow(1-t,2);
+        rotAngle=80-eased*130;
+      }
+
+      const handX=px+41;
+      const handY=py+28;
+
+      this.cx.fillStyle=shirt.c1;
+      this.cx.fillRect(px+38,py+24,6,10);
+      this.cx.fillStyle=skin;
+      this.cx.fillRect(px+38,py+32,6,4);
+
+      // 곡괭이 회전 그리기 (pivot: 손잡이 끝)
+      this.cx.save();
+      this.cx.translate(handX,handY);
+      this.cx.rotate(rotAngle*Math.PI/180);
+      // 손잡이
+      this.cx.fillStyle='#8b4513';
+      this.cx.fillRect(-1,-18,2,18);
+      // 곡괭이 헤드 (십자 형태)
+      this.cx.fillStyle=this.pk.c;
+      // 가로 - 양쪽 날
+      this.cx.fillRect(-8,-22,16,4);
+      // 세로 - 뾰족한 끝
+      this.cx.fillRect(-2,-26,4,8);
+      // 그림자/디테일
+      this.cx.fillStyle='rgba(0,0,0,0.3)';
+      this.cx.fillRect(-8,-19,16,1);
+      this.cx.restore();
+
+      this.cx.fillStyle=shirt.c1;
+      this.cx.fillRect(px+10,py+26,6,8);
+      this.cx.fillStyle=skin;
+      this.cx.fillRect(px+10,py+32,6,4);
+    }else{
+      this.cx.fillStyle=shirt.c1;
+      this.cx.fillRect(px+10,py+24,6,12);
+      this.cx.fillStyle=skin;
+      this.cx.fillRect(px+10,py+34,6,4);
+      this.cx.fillStyle=shirt.c1;
+      this.cx.fillRect(px+38,py+24,6,12);
+      this.cx.fillStyle=skin;
+      this.cx.fillRect(px+38,py+34,6,4);
+      // 들고있는 곡괭이 (십자 형태)
+      this.cx.fillStyle='#8b4513';
+      this.cx.fillRect(px+11,py+38,2,8);
+      this.cx.fillStyle=this.pk.c;
+      this.cx.fillRect(px+6,py+36,12,3);
+      this.cx.fillRect(px+10,py+34,4,4);
+    }
+  }
+
+  drawUp(px,py,l){
+    const hair=HAIRSTYLES[this.outfit.hair]||HAIRSTYLES[0];
+    const shirt=SHIRTS[this.outfit.shirt]||SHIRTS[0];
+    const pants=PANTS[this.outfit.pants]||PANTS[0];
+    const skin='#ffcc99';
+
+    // 다리
+    this.cx.fillStyle=pants.c;
+    this.cx.fillRect(px+18,py+42+l,7,12);
+    this.cx.fillRect(px+29,py+42-l,7,12);
+    this.cx.fillStyle='#8b6914';
+    this.cx.fillRect(px+18,py+50+l,7,4);
+    this.cx.fillRect(px+29,py+50-l,7,4);
+    // 몸통
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+16,py+22,22,22);
+    this.cx.fillStyle=shirt.c2;
+    this.cx.fillRect(px+16,py+36,22,4);
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+25,py+36,4,4);
+    // 팔 (뒷모습)
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+10,py+24,6,12);
+    this.cx.fillRect(px+38,py+24,6,12);
+    // 목
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+22,py+18,10,6);
+    // 머리 뒷통수
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+18,py+8,18,14);
+    this.cx.fillStyle=hair.c;
+    this.cx.fillRect(px+16,py+4,22,10);
+    this.cx.fillRect(px+18,py+6,18,6);
+    // 헬멧 뒤
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+18,py+4,18,4);
+    this.cx.fillRect(px+20,py+6,14,2);
+    // 곡괭이 뒤에
+    if(this.p.w){
+      this.cx.fillStyle=this.pk.c;
+      this.cx.fillRect(px+8,py+28,3,12);
+      this.cx.fillRect(px+6,py+26,7,4);
+    }
+  }
+
+  drawLeft(px,py,l){
+    const hair=HAIRSTYLES[this.outfit.hair]||HAIRSTYLES[0];
+    const shirt=SHIRTS[this.outfit.shirt]||SHIRTS[0];
+    const pants=PANTS[this.outfit.pants]||PANTS[0];
+    const skin='#ffcc99';
+
+    // 뒷다리 (먼 쪽)
+    this.cx.fillStyle=pants.c;
+    this.cx.fillRect(px+27,py+42-l,7,12);
+    this.cx.fillStyle='#8b6914';
+    this.cx.fillRect(px+27,py+50-l,7,4);
+    // 앞다리 (가까운 쪽)
+    this.cx.fillStyle=pants.c;
+    this.cx.fillRect(px+20,py+42+l,7,12);
+    this.cx.fillStyle='#8b6914';
+    this.cx.fillRect(px+20,py+50+l,7,4);
+    // 몸통
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+18,py+22,18,22);
+    // 벨트
+    this.cx.fillStyle=shirt.c2;
+    this.cx.fillRect(px+18,py+36,18,4);
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+26,py+36,4,4);
+    // 어깨
+    this.cx.fillStyle=shirt.c2;
+    this.cx.fillRect(px+18,py+22,6,4);
+    // 뒷팔
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+30,py+26,4,10);
+    // 목
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+20,py+18,8,6);
+    // 얼굴 옆모습
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+18,py+10,12,14);
+    // 턱선
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+16,py+20,4,4);
+    // 이마/머리카락
+    this.cx.fillStyle=hair.c;
+    this.cx.fillRect(px+18,py+6,14,6);
+    this.cx.fillRect(px+20,py+4,12,4);
+    this.cx.fillRect(px+22,py+10,8,2);
+    // 귀
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+28,py+16,2,4);
+    // 눈
+    this.cx.fillStyle='#fff';
+    this.cx.fillRect(px+22,py+14,5,4);
+    this.cx.fillStyle='#000';
+    this.cx.fillRect(px+23,py+15,3,2);
+    // 눈썹
+    this.cx.fillStyle=hair.c;
+    this.cx.fillRect(px+22,py+12,5,2);
+    // 코
+    this.cx.fillStyle='#ffaa77';
+    this.cx.fillRect(px+18,py+18,3,4);
+    this.cx.fillRect(px+16,py+20,2,2);
+    // 입
+    this.cx.fillStyle='#cc6666';
+    this.cx.fillRect(px+18,py+22,6,2);
+    // 헬멧
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+20,py+4,12,3);
+    this.cx.fillRect(px+22,py+6,10,2);
+    this.cx.fillStyle='#ffff00';
+    this.cx.fillRect(px+18,py+4,4,2);
+    this.cx.fillStyle='#fff';
+    this.cx.fillRect(px+18,py+4,2,1);
+    // 앞팔
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+10,py+24,6,12);
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+10,py+34,6,4);
+    // 곡괭이
+    if(this.p.w){
+      // 곡괭이질 애니메이션 - 회전
+      const phase=(this.mf/3)%10;
+      let rotAngle=0;
+
+      if(phase<=6){
+        const t=phase/6;
+        const eased=t*t;
+        rotAngle=-50+eased*130;
+      }else{
+        const t=(phase-6)/4;
+        const eased=1-Math.pow(1-t,2);
+        rotAngle=80-eased*130;
+      }
+
+      const handX=px+13;
+      const handY=py+28;
+
+      this.cx.save();
+      this.cx.translate(handX,handY);
+      this.cx.rotate(rotAngle*Math.PI/180);
+      // 손잡이
+      this.cx.fillStyle='#8b4513';
+      this.cx.fillRect(-1,-18,2,18);
+      // 곡괭이 헤드 (십자 형태)
+      this.cx.fillStyle=this.pk.c;
+      this.cx.fillRect(-8,-22,16,4);
+      this.cx.fillRect(-2,-26,4,8);
+      // 그림자/디테일
+      this.cx.fillStyle='rgba(0,0,0,0.3)';
+      this.cx.fillRect(-8,-19,16,1);
+      this.cx.restore();
+    }else{
+      // 들고있는 곡괭이 (십자 형태)
+      this.cx.fillStyle='#8b4513';
+      this.cx.fillRect(px+13,py+38,2,8);
+      this.cx.fillStyle=this.pk.c;
+      this.cx.fillRect(px+8,py+36,12,3);
+      this.cx.fillRect(px+12,py+34,4,4);
+    }
+  }
+
+  drawRight(px,py,l){
+    const hair=HAIRSTYLES[this.outfit.hair]||HAIRSTYLES[0];
+    const shirt=SHIRTS[this.outfit.shirt]||SHIRTS[0];
+    const pants=PANTS[this.outfit.pants]||PANTS[0];
+    const skin='#ffcc99';
+
+    // 뒷다리
+    this.cx.fillStyle=pants.c;
+    this.cx.fillRect(px+18,py+42+l,7,12);
+    this.cx.fillStyle='#8b6914';
+    this.cx.fillRect(px+18,py+50+l,7,4);
+    // 앞다리
+    this.cx.fillStyle=pants.c;
+    this.cx.fillRect(px+27,py+42-l,7,12);
+    this.cx.fillStyle='#8b6914';
+    this.cx.fillRect(px+27,py+50-l,7,4);
+    // 몸통
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+18,py+22,18,22);
+    // 벨트
+    this.cx.fillStyle=shirt.c2;
+    this.cx.fillRect(px+18,py+36,18,4);
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+24,py+36,4,4);
+    // 어깨
+    this.cx.fillStyle=shirt.c2;
+    this.cx.fillRect(px+30,py+22,6,4);
+    // 뒷팔
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+20,py+26,4,10);
+    // 목
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+26,py+18,8,6);
+    // 얼굴 옆모습
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+24,py+10,12,14);
+    // 턱선
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+34,py+20,4,4);
+    // 이마/머리카락
+    this.cx.fillStyle=hair.c;
+    this.cx.fillRect(px+22,py+6,14,6);
+    this.cx.fillRect(px+22,py+4,12,4);
+    this.cx.fillRect(px+24,py+10,8,2);
+    // 귀
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+24,py+16,2,4);
+    // 눈
+    this.cx.fillStyle='#fff';
+    this.cx.fillRect(px+27,py+14,5,4);
+    this.cx.fillStyle='#000';
+    this.cx.fillRect(px+28,py+15,3,2);
+    // 눈썹
+    this.cx.fillStyle=hair.c;
+    this.cx.fillRect(px+27,py+12,5,2);
+    // 코
+    this.cx.fillStyle='#ffaa77';
+    this.cx.fillRect(px+33,py+18,3,4);
+    this.cx.fillRect(px+36,py+20,2,2);
+    // 입
+    this.cx.fillStyle='#cc6666';
+    this.cx.fillRect(px+30,py+22,6,2);
+    // 헬멧
+    this.cx.fillStyle='#ffd700';
+    this.cx.fillRect(px+22,py+4,12,3);
+    this.cx.fillRect(px+22,py+6,10,2);
+    this.cx.fillStyle='#ffff00';
+    this.cx.fillRect(px+32,py+4,4,2);
+    this.cx.fillStyle='#fff';
+    this.cx.fillRect(px+34,py+4,2,1);
+    // 앞팔
+    this.cx.fillStyle=shirt.c1;
+    this.cx.fillRect(px+38,py+24,6,12);
+    this.cx.fillStyle=skin;
+    this.cx.fillRect(px+38,py+34,6,4);
+    // 곡괭이
+    if(this.p.w){
+      // 곡괭이질 애니메이션 - 회전
+      const phase=(this.mf/3)%10;
+      let rotAngle=0;
+
+      if(phase<=6){
+        const t=phase/6;
+        const eased=t*t;
+        rotAngle=-50+eased*130;
+      }else{
+        const t=(phase-6)/4;
+        const eased=1-Math.pow(1-t,2);
+        rotAngle=80-eased*130;
+      }
+
+      const handX=px+41;
+      const handY=py+28;
+
+      this.cx.save();
+      this.cx.translate(handX,handY);
+      this.cx.rotate(rotAngle*Math.PI/180);
+      // 손잡이
+      this.cx.fillStyle='#8b4513';
+      this.cx.fillRect(-1,-18,2,18);
+      // 곡괭이 헤드 (십자 형태)
+      this.cx.fillStyle=this.pk.c;
+      this.cx.fillRect(-8,-22,16,4);
+      this.cx.fillRect(-2,-26,4,8);
+      // 그림자/디테일
+      this.cx.fillStyle='rgba(0,0,0,0.3)';
+      this.cx.fillRect(-8,-19,16,1);
+      this.cx.restore();
+    }else{
+      // 들고있는 곡괭이 (십자 형태)
+      this.cx.fillStyle='#8b4513';
+      this.cx.fillRect(px+39,py+38,2,8);
+      this.cx.fillStyle=this.pk.c;
+      this.cx.fillRect(px+34,py+36,12,3);
+      this.cx.fillRect(px+38,py+34,4,4);
+    }
+  }
+
+  act(){
+    if(this.mp){this.stopMine();return;}
+    if(this.sc=='home'){
+      const d1=Math.sqrt((this.p.x-9.5)**2+(this.p.y-9)**2);
+      if(d1<3){this.e=this.st.nrg;this.updateUI();this.save();alert('💤 휴식! 에너지 회복');}
+      const d2=Math.sqrt((this.p.x-5)**2+(this.p.y-3.5)**2);
+      if(d2<2){
+        const buffs=M.filter(m=>m.w==this.ws.id).map(m=>m.n).join(', ');
+        alert('📺 오늘 날씨: '+this.ws.n+'\n\n버프 광물: '+(buffs||'없음'));
+      }
+      const d3=Math.sqrt((this.p.x-9)**2+(this.p.y-17.5)**2);
+      if(d3<2){this.chg('village',1);}
+    }else if(this.sc=='village'){
+      if(this.vl==1){
+        const dh=Math.sqrt((this.p.x-3)**2+(this.p.y-3)**2);
+        if(dh<2){this.chg('home');return;}
+        const ds=Math.sqrt((this.p.x-15)**2+(this.p.y-3)**2);
+        if(ds<2){this.showShop();return;}
+        const dv=Math.sqrt((this.p.x-15)**2+(this.p.y-15)**2);
+        if(dv<2){this.chg('village',2);return;}
+      }else if(this.vl==2){
+        const d1=Math.sqrt((this.p.x-3)**2+(this.p.y-3)**2);
+        if(d1<2){this.chg('village',1);return;}
+        const d3=Math.sqrt((this.p.x-15)**2+(this.p.y-3)**2);
+        if(d3<2){this.chg('village',3);return;}
+      }else if(this.vl==3){
+        const d2=Math.sqrt((this.p.x-15)**2+(this.p.y-3)**2);
+        if(d2<2){this.chg('village',2);return;}
+      }
+      for(const l of L.filter(ll=>ll.v==this.vl)){
+        const d=Math.sqrt((this.p.x-(l.x+1))**2+(this.p.y-(l.y+1))**2);
+        if(d<2){this.chg('mine',this.vl,l.l);return;}
+      }
+    }else if(this.sc=='mine'){
+      const de=Math.sqrt((this.p.x-1.5)**2+(this.p.y-17)**2);
+      if(de<2){this.chg('village',this.vl);return;}
+      this.tryMine();
+    }
+  }
+
+  tryMine(){
+    if(this.mp||this.e<1)return;
+    let near=null,dist=2;
+    for(const m of this.mins){
+      const d=Math.sqrt((this.p.x-m.x)**2+(this.p.y-m.y)**2);
+      if(d<dist){dist=d;near=m;}
+    }
+    if(near)this.startMine(near);
+  }
+
+  startMine(m){
+    this.tm=m;
+    this.mp=true;
+    this.mf=0;
+    this.p.w=true;
+    document.getElementById('mIcon').textContent=m.i;
+    document.getElementById('mName').textContent=m.n+(m.buff>1?' ⬆':'');
+    document.getElementById('mining').classList.add('show');
+    this.upMineUI();
+    setTimeout(()=>this.mine(),500);
+  }
+
+  mine(){
+    if(!this.tm||this.e<1){this.stopMine();return;}
+    const m=this.tm;
+    let dmg=this.pk.a+this.st.atk;
+    if(dmg<m.d)dmg=Math.random()<0.5?Math.floor(dmg*0.5):dmg;
+    else if(dmg>=m.d*2)dmg=Math.floor(dmg*1.5);
+    m.ch-=dmg;
+    this.e--;
+    if(this.pk.u!=Infinity)this.pk.u--;
+    document.getElementById('dmg').textContent='데미지: '+dmg+' 💥';
+    this.upMineUI();
+    this.updateUI();
+    if(m.ch<=0){setTimeout(()=>this.collect(m),300);return;}
+    if(this.pk.u!=Infinity&&this.pk.u<=0){alert('곡괭이 파괴!');this.pk={...P[0]};this.stopMine();this.updateUI();return;}
+    const delay=Math.max(200,500/this.st.min);
+    setTimeout(()=>this.mine(),delay);
+  }
+
+  upMineUI(){
+    const m=this.tm;
+    const hp=Math.max(0,(m.ch/m.h)*100);
+    document.getElementById('mHp').style.width=hp+'%';
+    document.getElementById('mTxt').textContent=Math.max(0,m.ch)+'/'+m.h;
+  }
+
+  collect(m){
+    if(this.inv.length>=30){alert('인벤 가득!');this.stopMine();return;}
+    this.inv.push({n:m.n,i:m.i,p:m.p});
+    const gold=Math.floor(m.p*this.st.gld*(m.buff||1));
+    const xp=Math.floor(m.x*this.st.xpm*(m.buff||1));
+    this.g+=gold;
+    this.addXP(xp);
+    const idx=this.mins.findIndex(mm=>mm.id==m.id);
+    if(idx!=-1)this.mins.splice(idx,1);
+    this.stopMine();
+    this.updateUI();
+    this.save();
+    if(this.mins.length<15)this.genMin(this.ml);
+  }
+
+  addXP(x){
+    this.xp+=x;
+    while(this.xp>=this.nx){
+      this.xp-=this.nx;
+      this.lvUp();
+    }
+    this.updateUI();
+  }
+
+  lvUp(){
+    this.lv++;
+    this.sp++;
+    this.nx=Math.floor(this.nx*1.5);
+    alert('🎉 레벨업! Lv.'+this.lv+'\n스탯 포인트 +1');
+    this.updateUI();
+  }
+
+  up(s){
+    if(this.sp<=0)return;
+    this.sp--;
+    if(s=='nrg')this.st.nrg+=10;
+    else if(s=='atk')this.st.atk+=2;
+    else if(s=='spd')this.st.spd+=0.1;
+    else if(s=='min')this.st.min+=0.1;
+    else if(s=='gld')this.st.gld+=0.1;
+    else if(s=='xp')this.st.xpm+=0.1;
+    this.upStatsUI();
+    this.updateUI();
+    this.save();
+  }
+
+  stopMine(){
+    this.mp=false;
+    this.mf=0;
+    this.p.w=false;
+    this.tm=null;
+    document.getElementById('mining').classList.remove('show');
+  }
+
+  updateUI(){
+    document.getElementById('lv').textContent=this.lv;
+    document.getElementById('gold').textContent=this.g.toLocaleString();
+    document.getElementById('nrg').textContent=this.e;
+    document.getElementById('maxNrg').textContent=this.st.nrg;
+    document.getElementById('inv').textContent=this.inv.length;
+    document.getElementById('pick').textContent=this.pk.n;
+    const dur=this.pk.u==Infinity?'∞':this.pk.u+'/'+this.pk.m;
+    document.getElementById('dur').textContent=dur;
+    const xpPct=(this.xp/this.nx)*100;
+    document.getElementById('exp').style.width=xpPct+'%';
+  }
+
+  upStatsUI(){
+    document.getElementById('pts').textContent=this.sp;
+    document.getElementById('s1').textContent=this.st.nrg;
+    document.getElementById('s2').textContent=this.st.atk;
+    document.getElementById('s3').textContent=this.st.spd.toFixed(1)+'x';
+    document.getElementById('s4').textContent=Math.round(this.st.min*100)+'%';
+    document.getElementById('s5').textContent=this.st.gld.toFixed(1)+'x';
+    document.getElementById('s6').textContent=this.st.xpm.toFixed(1)+'x';
+    document.querySelectorAll('.stat-btn').forEach(b=>b.disabled=this.sp<=0);
+  }
+
+  toggleMenu(){
+    document.getElementById('menu').classList.toggle('show');
+  }
+
+  closeMenu(){
+    document.getElementById('menu').classList.remove('show');
+  }
+
+  openSub(type){
+    document.getElementById('menu').classList.remove('show');
+    if(type=='home'){this.chg('home');}
+    else if(type=='village'){this.chg('village',1);}
+    else if(type=='stats'){this.showStats();}
+    else if(type=='shop'){this.showShop();}
+    else if(type=='inv'){this.showInv();}
+    else if(type=='wardrobe'){this.showWardrobe();}
+  }
+
+  showStats(){
+    this.upStatsUI();
+    document.getElementById('stats').classList.add('show');
+  }
+
+  showInv(){
+    const list=document.getElementById('invList');
+    list.innerHTML='';
+    if(this.inv.length==0){
+      list.innerHTML='<p style="text-align:center;color:#aaa">인벤토리가 비어있습니다</p>';
+    }else{
+      const cnt={};
+      this.inv.forEach(i=>{
+        if(!cnt[i.n])cnt[i.n]={...i,c:0};
+        cnt[i.n].c++;
+      });
+      Object.values(cnt).forEach(i=>{
+        const d=document.createElement('div');
+        d.className='item';
+        d.innerHTML=`<span>${i.i} ${i.n} x${i.c}</span><span style="color:#ffd700">${(i.p*i.c).toLocaleString()}G</span>`;
+        list.appendChild(d);
+      });
+    }
+    document.getElementById('invModal').classList.add('show');
+  }
+
+  showShop(){
+    document.getElementById('shop').classList.add('show');
+    this.shopTab('sell');
+  }
+
+  shopTab(t){
+    const list=document.getElementById('shopList');
+    list.innerHTML='';
+    document.getElementById('sellTab').style.opacity=t=='sell'?'1':'0.5';
+    document.getElementById('buyTab').style.opacity=t=='buy'?'1':'0.5';
+
+    if(t=='sell'){
+      if(this.inv.length==0){
+        list.innerHTML='<p style="text-align:center;color:#aaa">판매할 아이템이 없습니다</p>';
+      }else{
+        const cnt={};
+        this.inv.forEach(i=>{
+          if(!cnt[i.n])cnt[i.n]={...i,c:0};
+          cnt[i.n].c++;
+        });
+        Object.values(cnt).forEach(i=>{
+          const d=document.createElement('div');
+          d.className='item';
+          const total=Math.floor(i.p*i.c*this.st.gld);
+          d.innerHTML=`
+            <div><div>${i.i} ${i.n} x${i.c}</div><div style="color:#ffd700;font-size:11px">총 ${total.toLocaleString()}G</div></div>
+            <div style="display:flex;gap:4px">
+              <button class="btn" style="min-width:50px;padding:6px 10px;font-size:12px" onclick="g.sell('${i.n}')">개별</button>
+              <button class="btn btn-y" style="min-width:50px;padding:6px 10px;font-size:12px;color:#000" onclick="g.sellAllByName('${i.n}')">일괄</button>
+            </div>
+          `;
+          list.appendChild(d);
+        });
+
+        // 전체 판매 버튼
+        const totalValue=this.inv.reduce((sum,i)=>sum+Math.floor(i.p*this.st.gld),0);
+        const bulkBtn=document.createElement('div');
+        bulkBtn.style.marginTop='12px';
+        bulkBtn.innerHTML=`
+          <button class="btn btn-r" style="width:100%;font-weight:700" onclick="g.sellAll()">
+            💰 전체 판매 (총 ${totalValue.toLocaleString()}G)
+          </button>
+        `;
+        list.appendChild(bulkBtn);
+      }
+    }else{
+      P.forEach((p,idx)=>{
+        if(idx==0)return;
+        const d=document.createElement('div');
+        d.className='item';
+        d.innerHTML=`
+          <div><div>⛏️ ${p.n} 곡괭이</div><div style="color:#ffd700;font-size:11px">${p.p.toLocaleString()}G (ATK:${p.a})</div></div>
+          <button class="btn btn-g" style="min-width:60px;padding:6px 12px" onclick="g.buy(${idx})" ${this.g<p.p?'disabled':''}>구매</button>
+        `;
+        list.appendChild(d);
+      });
+    }
+  }
+
+  sell(n){
+    const idx=this.inv.findIndex(i=>i.n==n);
+    if(idx==-1)return;
+    const i=this.inv[idx];
+    const price=Math.floor(i.p*this.st.gld);
+    this.g+=price;
+    this.inv.splice(idx,1);
+    this.updateUI();
+    this.shopTab('sell');
+    this.save();
+  }
+
+  sellAllByName(n){
+    const items=this.inv.filter(i=>i.n==n);
+    if(items.length==0)return;
+    const totalValue=items.reduce((sum,i)=>sum+Math.floor(i.p*this.st.gld),0);
+    const count=items.length;
+    this.g+=totalValue;
+    this.inv=this.inv.filter(i=>i.n!=n);
+    this.updateUI();
+    this.shopTab('sell');
+    this.save();
+  }
+
+  sellAll(){
+    if(this.inv.length==0)return;
+    const totalValue=this.inv.reduce((sum,i)=>sum+Math.floor(i.p*this.st.gld),0);
+    const count=this.inv.length;
+    this.g+=totalValue;
+    this.inv=[];
+    this.updateUI();
+    this.shopTab('sell');
+    this.save();
+  }
+
+  buy(idx){
+    const p=P[idx];
+    if(this.g<p.p){alert('골드 부족!');return;}
+    this.g-=p.p;
+    this.pk={...p};
+    alert(p.n+' 곡괭이 구매!');
+    this.updateUI();
+    this.shopTab('buy');
+    this.save();
+  }
+
+  showWardrobe(){
+    const hairList=document.getElementById('hairList');
+    const shirtList=document.getElementById('shirtList');
+    const pantsList=document.getElementById('pantsList');
+
+    hairList.innerHTML='';
+    shirtList.innerHTML='';
+    pantsList.innerHTML='';
+
+    HAIRSTYLES.forEach(h=>{
+      const btn=document.createElement('button');
+      btn.className='btn';
+      btn.textContent=h.n;
+      btn.style.background=h.c;
+      btn.style.color=this.isLightColor(h.c)?'#000':'#fff';
+      if(this.outfit.hair==h.id)btn.style.border='3px solid #ffd700';
+      btn.onclick=()=>this.changeOutfit('hair',h.id);
+      hairList.appendChild(btn);
+    });
+
+    SHIRTS.forEach(s=>{
+      const btn=document.createElement('button');
+      btn.className='btn';
+      btn.textContent=s.n;
+      btn.style.background=`linear-gradient(to bottom, ${s.c1}, ${s.c2})`;
+      btn.style.color=this.isLightColor(s.c1)?'#000':'#fff';
+      if(this.outfit.shirt==s.id)btn.style.border='3px solid #ffd700';
+      btn.onclick=()=>this.changeOutfit('shirt',s.id);
+      shirtList.appendChild(btn);
+    });
+
+    PANTS.forEach(p=>{
+      const btn=document.createElement('button');
+      btn.className='btn';
+      btn.textContent=p.n;
+      btn.style.background=p.c;
+      btn.style.color=this.isLightColor(p.c)?'#000':'#fff';
+      if(this.outfit.pants==p.id)btn.style.border='3px solid #ffd700';
+      btn.onclick=()=>this.changeOutfit('pants',p.id);
+      pantsList.appendChild(btn);
+    });
+
+    document.getElementById('wardrobe').classList.add('show');
+  }
+
+  isLightColor(c){
+    const hex=c.replace('#','');
+    const r=parseInt(hex.substr(0,2),16);
+    const g=parseInt(hex.substr(2,2),16);
+    const b=parseInt(hex.substr(4,2),16);
+    const brightness=(r*299+g*587+b*114)/1000;
+    return brightness>155;
+  }
+
+  changeOutfit(part,id){
+    this.outfit[part]=id;
+    this.save();
+    this.showWardrobe();
+  }
+
+  save(){
+    const d={
+      lv:this.lv,xp:this.xp,nx:this.nx,sp:this.sp,st:this.st,
+      g:this.g,e:this.e,inv:this.inv,pk:this.pk,sc:this.sc,vl:this.vl,
+      outfit:this.outfit
+    };
+    localStorage.setItem('mdSave',JSON.stringify(d));
+  }
+
+  load(){
+    const s=localStorage.getItem('mdSave');
+    if(s){
+      const d=JSON.parse(s);
+      this.lv=d.lv||1;
+      this.xp=d.xp||0;
+      this.nx=d.nx||100;
+      this.sp=d.sp||0;
+      this.st=d.st||this.st;
+      this.g=d.g||0;
+      this.e=d.e||50;
+      this.inv=d.inv||[];
+      this.pk=d.pk||{...P[0]};
+      this.vl=d.vl||1;
+      if(d.outfit&&typeof d.outfit.hair==='number'){
+        this.outfit=d.outfit;
+      }else{
+        this.outfit={hair:0,shirt:0,pants:0};
+      }
+      this.updateUI();
+    }
+  }
+
+  loop(){
+    this.update();
+    this.render();
+    requestAnimationFrame(()=>this.loop());
+  }
+}
+
+const g=new Game();
+</script>
+</body>
+</html>
