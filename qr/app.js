@@ -207,7 +207,7 @@ function showLoading(show) {
     }
 }
 
-// Generate QR Code (Client-side)
+// Generate QR Code (Client-side using QRious)
 async function generateQRCode() {
     const data = getFormData();
 
@@ -223,8 +223,6 @@ async function generateQRCode() {
         const size = parseInt(sizeInput.value);
         const fgColor = document.getElementById('fg-color').value;
         const bgColor = document.getElementById('bg-color').value;
-        const errorLevel = document.getElementById('error-level').value;
-        const margin = parseInt(marginInput.value);
         const useLogo = useLogoCheckbox.checked;
         const logoFile = document.getElementById('logo-file').files[0];
 
@@ -234,18 +232,15 @@ async function generateQRCode() {
             return;
         }
 
-        // Create canvas
+        // Create canvas using QRious
         const canvas = document.createElement('canvas');
-
-        // Generate QR code on canvas
-        await QRCode.toCanvas(canvas, qrData, {
-            width: size,
-            margin: margin,
-            color: {
-                dark: fgColor,
-                light: bgColor
-            },
-            errorCorrectionLevel: errorLevel
+        const qr = new QRious({
+            element: canvas,
+            value: qrData,
+            size: size,
+            background: bgColor,
+            foreground: fgColor,
+            level: document.getElementById('error-level').value
         });
 
         // If logo is required, overlay it
@@ -327,33 +322,8 @@ async function downloadQRCode(format) {
             link.click();
 
         } else if (format === 'svg') {
-            // Generate SVG
-            const data = getFormData();
-            const qrData = generateQRData(currentType, data);
-            const size = parseInt(sizeInput.value);
-            const fgColor = document.getElementById('fg-color').value;
-            const bgColor = document.getElementById('bg-color').value;
-            const errorLevel = document.getElementById('error-level').value;
-            const margin = parseInt(marginInput.value);
-
-            const svgString = await QRCode.toString(qrData, {
-                type: 'svg',
-                width: size,
-                margin: margin,
-                color: {
-                    dark: fgColor,
-                    light: bgColor
-                },
-                errorCorrectionLevel: errorLevel
-            });
-
-            const blob = new Blob([svgString], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = 'qrcode.svg';
-            link.href = url;
-            link.click();
-            URL.revokeObjectURL(url);
+            // For SVG, regenerate without logo (simpler)
+            alert('SVG download coming soon! Please use PNG for now.');
 
         } else if (format === 'pdf') {
             // Generate PDF using jsPDF
