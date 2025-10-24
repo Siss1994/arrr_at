@@ -1,9 +1,11 @@
 // 글로벌 변수
 let scene, camera, renderer;
 let cardMeshes = [];
-let selectedCards = [];
+let allCards = []; // 섞인 전체 카드 덱
+let selectedCards = []; // 사용자가 선택한 카드
 let lastReadingTime = 0;
 const COOLDOWN_MS = 20000; // 20초
+const API_ENDPOINT = 'http://localhost:5051/api/tarot/interpret'; // LLM 서버 주소
 
 // 쿨다운 체크
 function checkCooldown() {
@@ -51,17 +53,44 @@ function startReading() {
         return;
     }
 
-    // 카드 뽑기
-    selectedCards = drawCards(3);
-    lastReadingTime = Date.now();
+    // 전체 카드 덱 섞기
+    allCards = shuffleDeck();
+    selectedCards = [];
 
     // UI 업데이트
     document.getElementById('questionSection').style.display = 'none';
     document.getElementById('canvasContainer').style.display = 'block';
 
-    // 3D 카드 애니메이션 시작
+    // 카드 선택 안내 표시
+    showSelectionGuide();
+
+    // 3D 카드 애니메이션 시작 (모든 카드 표시)
     init3DCards();
     animateCardSpread();
+}
+
+// 카드 선택 가이드 표시
+function showSelectionGuide() {
+    const guide = document.createElement('div');
+    guide.id = 'selectionGuide';
+    guide.style.cssText = `
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(138, 43, 226, 0.9);
+        padding: 15px 30px;
+        border-radius: 10px;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        z-index: 1000;
+        text-align: center;
+    `;
+    guide.innerHTML = '✨ 직관에 따라 카드 3장을 선택하세요 (0/3) ✨';
+
+    const container = document.getElementById('canvasContainer');
+    container.appendChild(guide);
 }
 
 // 3D 카드 초기화
@@ -76,7 +105,7 @@ function init3DCards() {
 
     // Camera 생성
     camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    camera.position.set(0, 0, 12);
+    camera.position.set(0, 2, 15);
 
     // Renderer 생성
     renderer = new THREE.WebGLRenderer({ antialias: true, canvas: container });
@@ -84,29 +113,41 @@ function init3DCards() {
     renderer.shadowMap.enabled = true;
 
     // 조명
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
     const pointLight = new THREE.PointLight(0xda70d6, 1.5);
     pointLight.position.set(0, 5, 10);
     scene.add(pointLight);
 
-    // 카드 생성
+    // 카드 뒷면 텍스처
+    const backTexture = new THREE.TextureLoader().load('cards/card_back.png',
+        () => {},
+        undefined,
+        () => {
+            // 카드 뒷면 이미지 없으면 컬러로 대체
+        }
+    );
+
+    // 선택 가능한 카드 생성 (10장만 표시)
     cardMeshes = [];
     const cardGeometry = new THREE.PlaneGeometry(2, 3);
+    const displayCards = allCards.slice(0, 10); // 처음 10장만 표시
 
-    selectedCards.forEach((card, index) => {
-        const loader = new THREE.TextureLoader();
-        const texture = loader.load(card.image);
-
+    displayCards.forEach((card, index) => {
         const cardMaterial = new THREE.MeshStandardMaterial({
-            map: texture,
+            color: 0x4b0082,
             side: THREE.DoubleSide
         });
 
         const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
         cardMesh.position.set(0, 0, -index * 0.1);
-        cardMesh.userData = { index, card, targetX: (index - 1) * 2.5 };
+        cardMesh.userData = {
+            index,
+            card,
+            targetX: (index - 5) * 2.2,
+            selected: false
+        };
 
         cardMeshes.push(cardMesh);
         scene.add(cardMesh);
@@ -123,19 +164,36 @@ function init3DCards() {
         mouse.y = -((event.clientY - rect.top) / height) * 2 + 1;
 
         raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(cardMeshes);
+        const intersects = raycaster.intersectObjects(cardMeshes.filter(m => !m.userData.selected));
 
-        if (hoveredCard) {
+        if (hoveredCard && !hoveredCard.userData.selected) {
             hoveredCard.scale.set(1, 1, 1);
             hoveredCard.position.y = 0;
         }
 
         if (intersects.length > 0) {
             hoveredCard = intersects[0].object;
-            hoveredCard.scale.set(1.1, 1.1, 1.1);
-            hoveredCard.position.y = 0.3;
+            hoveredCard.scale.set(1.15, 1.15, 1.15);
+            hoveredCard.position.y = 0.5;
+            container.style.cursor = 'pointer';
         } else {
             hoveredCard = null;
+            container.style.cursor = 'default';
+        }
+    });
+
+    // 클릭 이벤트 - 카드 선택
+    container.addEventListener('click', (event) => {
+        const rect = container.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(cardMeshes.filter(m => !m.userData.selected));
+
+        if (intersects.length > 0 && selectedCards.length < 3) {
+            const clickedCard = intersects[0].object;
+            selectCard(clickedCard);
         }
     });
 
@@ -144,7 +202,9 @@ function init3DCards() {
         requestAnimationFrame(animate);
 
         cardMeshes.forEach(mesh => {
-            mesh.rotation.y += 0.002;
+            if (!mesh.userData.selected) {
+                mesh.rotation.y += 0.005;
+            }
         });
 
         renderer.render(scene, camera);
@@ -161,10 +221,35 @@ function init3DCards() {
     });
 }
 
+// 카드 선택 처리
+function selectCard(cardMesh) {
+    cardMesh.userData.selected = true;
+    selectedCards.push(cardMesh.userData.card);
+
+    // 선택된 카드 시각적 효과
+    cardMesh.material.color.setHex(0xda70d6);
+    cardMesh.material.emissive = new THREE.Color(0xff00ff);
+    cardMesh.material.emissiveIntensity = 0.5;
+
+    // 선택 가이드 업데이트
+    const guide = document.getElementById('selectionGuide');
+    if (guide) {
+        guide.innerHTML = `✨ 직관에 따라 카드 3장을 선택하세요 (${selectedCards.length}/3) ✨`;
+    }
+
+    // 3장 선택 완료
+    if (selectedCards.length === 3) {
+        setTimeout(() => {
+            lastReadingTime = Date.now();
+            requestInterpretation();
+        }, 500);
+    }
+}
+
 // 카드 펼치기 애니메이션
 function animateCardSpread() {
     let progress = 0;
-    const duration = 2000; // 2초
+    const duration = 1500; // 1.5초
     const startTime = Date.now();
 
     function spread() {
@@ -175,15 +260,9 @@ function animateCardSpread() {
                 const targetX = mesh.userData.targetX;
                 const currentX = mesh.position.x;
                 mesh.position.x = currentX + (targetX - currentX) * 0.1;
-                mesh.rotation.y = Math.PI * 2 * (1 - progress);
             });
 
             requestAnimationFrame(spread);
-        } else {
-            // 애니메이션 완료 후 해석 요청
-            setTimeout(() => {
-                requestInterpretation();
-            }, 500);
         }
     }
 
@@ -193,19 +272,22 @@ function animateCardSpread() {
 // 타로 해석 요청 (LLM)
 async function requestInterpretation() {
     const question = document.getElementById('question').value;
-    const cardNames = selectedCards.map(c => c.name).join(', ');
+
+    // 3D 캔버스 숨기기
+    document.getElementById('canvasContainer').style.display = 'none';
 
     // 로딩 표시
     document.getElementById('readingSection').style.display = 'block';
     document.getElementById('readingSection').innerHTML = `
         <div class="loading">
             <div class="spinner"></div>
-            <p>카드를 해석하는 중...</p>
+            <p>🔮 AI가 카드를 해석하고 있습니다...</p>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: #c8b3ff;">선택한 카드: ${selectedCards.map(c => c.name).join(', ')}</p>
         </div>
     `;
 
     try {
-        const response = await fetch('/api/tarot/interpret', {
+        const response = await fetch(API_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -217,16 +299,36 @@ async function requestInterpretation() {
         });
 
         if (!response.ok) {
-            throw new Error('해석 요청 실패');
+            throw new Error(`서버 오류: ${response.status}`);
         }
 
         const data = await response.json();
-        displayInterpretation(data.interpretation);
+
+        if (data.fallback) {
+            // Fallback 모드인 경우 알림
+            displayInterpretation(data.interpretation +
+                '<p style="margin-top: 20px; padding: 15px; background: rgba(255, 200, 0, 0.2); border-radius: 8px; color: #ffd700;">' +
+                '⚠️ LLM 서버가 응답하지 않아 기본 해석을 제공합니다.</p>');
+        } else {
+            displayInterpretation(data.interpretation);
+        }
 
     } catch (error) {
-        console.error('Error:', error);
-        // 임시 해석 (서버가 없을 때)
-        displayMockInterpretation();
+        console.error('API Error:', error);
+
+        // 서버 연결 실패 시 Mock 데이터 사용
+        document.getElementById('readingSection').innerHTML = `
+            <div style="text-align: center; padding: 40px;">
+                <h3 style="color: #ff6b6b; margin-bottom: 20px;">❌ 서버 연결 실패</h3>
+                <p style="margin-bottom: 15px;">타로 LLM 서버에 연결할 수 없습니다.</p>
+                <p style="font-size: 0.9rem; color: #c8b3ff;">서버가 실행 중인지 확인해주세요: ${API_ENDPOINT}</p>
+                <p style="margin-top: 20px; color: #9370db;">임시 해석을 표시합니다...</p>
+            </div>
+        `;
+
+        setTimeout(() => {
+            displayMockInterpretation();
+        }, 2000);
     }
 }
 
@@ -288,6 +390,12 @@ function resetReading() {
         scene.clear();
     }
 
+    // 선택 가이드 제거
+    const guide = document.getElementById('selectionGuide');
+    if (guide) {
+        guide.remove();
+    }
+
     // UI 리셋
     document.getElementById('questionSection').style.display = 'block';
     document.getElementById('canvasContainer').style.display = 'none';
@@ -295,6 +403,7 @@ function resetReading() {
     document.getElementById('question').value = '';
 
     selectedCards = [];
+    allCards = [];
     cardMeshes = [];
 }
 
