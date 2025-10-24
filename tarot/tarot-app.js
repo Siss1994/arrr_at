@@ -359,7 +359,7 @@ async function initWebLLM(onProgress) {
     }
 
     llmEngine = await window.webllm.CreateMLCEngine(
-        "Llama-3.2-1B-Instruct-q4f16_1-MLC", // 작고 빠른 모델
+        "Qwen2-0.5B-Instruct-q4f16_1-MLC", // 모바일 친화적 경량 모델 (~350MB)
         {
             initProgressCallback: onProgress
         }
@@ -439,7 +439,8 @@ async function requestInterpretation() {
                 ${interpretation.replace(/\n/g, '<br>')}
             </div>
             <div style="margin-top: 20px; padding: 15px; background: rgba(100, 200, 255, 0.1); border-radius: 8px; color: #a0d0ff; font-size: 0.9rem;">
-                ✨ 이 해석은 브라우저에서 직접 실행되는 AI 모델(Llama 3.2)이 생성했습니다.
+                ✨ 이 해석은 브라우저에서 직접 실행되는 AI 모델(Qwen2-0.5B)이 생성했습니다.<br>
+                📱 모바일에서도 사용 가능한 경량 모델입니다.
             </div>
         `;
 
