@@ -244,7 +244,9 @@ async function generateQRCode() {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to generate QR code');
+                const errorText = await response.text();
+                console.error('Server response:', errorText);
+                throw new Error(`Failed to generate QR code: ${response.status} ${response.statusText}`);
             }
 
             const blob = await response.blob();
@@ -263,7 +265,7 @@ async function generateQRCode() {
         showLoading(false);
     } catch (error) {
         console.error('Error generating QR code:', error);
-        alert('Failed to generate QR code. Please try again.');
+        alert(`Failed to generate QR code: ${error.message}\n\nPlease check the browser console for more details.`);
         showLoading(false);
     }
 }
