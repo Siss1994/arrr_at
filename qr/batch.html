@@ -6,8 +6,6 @@
     <title>Batch QR Code Generator - arrr.at</title>
     <meta name="description" content="Generate multiple QR codes at once. Batch QR code generator for bulk creation.">
     <link rel="stylesheet" href="style.css">
-    <!-- QR Code Library -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -102,6 +100,8 @@
         <p>Generating QR Codes...</p>
     </div>
 
+    <!-- QR Code Library - Load before batch.js -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="batch.js"></script>
 </body>
 </html>

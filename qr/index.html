@@ -6,9 +6,6 @@
     <title>QR Code Generator - arrr.at</title>
     <meta name="description" content="Free professional QR code generator with logo, colors, and multiple formats. Generate QR codes for URL, WiFi, vCard, and more.">
     <link rel="stylesheet" href="style.css">
-    <!-- QR Code Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -242,6 +239,9 @@
         <p>Generating QR Code...</p>
     </div>
 
-    <script src="app.js?v=3"></script>
+    <!-- QR Code Libraries - Load before app.js -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
