@@ -104,8 +104,8 @@ function init3DCards() {
     scene.background = new THREE.Color(0x14002d);
 
     // Camera 생성
-    camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    camera.position.set(0, 2, 15);
+    camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    camera.position.set(0, 8, 20);
 
     // Renderer 생성
     renderer = new THREE.WebGLRenderer({ antialias: true, canvas: container });
@@ -129,24 +129,42 @@ function init3DCards() {
         }
     );
 
-    // 선택 가능한 카드 생성 (10장만 표시)
+    // 선택 가능한 카드 생성 (78장 전체)
     cardMeshes = [];
-    const cardGeometry = new THREE.PlaneGeometry(2, 3);
-    const displayCards = allCards.slice(0, 10); // 처음 10장만 표시
+    const cardGeometry = new THREE.PlaneGeometry(1.2, 1.8);
 
-    displayCards.forEach((card, index) => {
+    // 78장을 원형 또는 나선형으로 배치
+    allCards.forEach((card, index) => {
         const cardMaterial = new THREE.MeshStandardMaterial({
             color: 0x4b0082,
-            side: THREE.DoubleSide
+            emissive: 0x2d004d,
+            emissiveIntensity: 0.3,
+            side: THREE.DoubleSide,
+            metalness: 0.3,
+            roughness: 0.7
         });
 
         const cardMesh = new THREE.Mesh(cardGeometry, cardMaterial);
-        cardMesh.position.set(0, 0, -index * 0.1);
+
+        // 나선형 배치 계산
+        const angle = (index / allCards.length) * Math.PI * 6; // 3바퀴 나선
+        const radius = 3 + (index / allCards.length) * 10; // 반지름 증가
+        const targetX = Math.cos(angle) * radius;
+        const targetZ = Math.sin(angle) * radius;
+        const targetY = (index / allCards.length) * 2 - 1; // 높이 변화
+
+        cardMesh.position.set(0, 0, 0); // 시작은 중앙
+        cardMesh.rotation.y = Math.random() * Math.PI * 2;
+
         cardMesh.userData = {
             index,
             card,
-            targetX: (index - 5) * 2.2,
-            selected: false
+            targetX,
+            targetY,
+            targetZ,
+            targetRotationY: -angle,
+            selected: false,
+            initialDelay: index * 0.01 // 순차적 애니메이션
         };
 
         cardMeshes.push(cardMesh);
@@ -168,13 +186,17 @@ function init3DCards() {
 
         if (hoveredCard && !hoveredCard.userData.selected) {
             hoveredCard.scale.set(1, 1, 1);
-            hoveredCard.position.y = 0;
+            hoveredCard.position.y = hoveredCard.userData.targetY;
+            hoveredCard.material.emissive.setHex(0x2d004d);
+            hoveredCard.material.emissiveIntensity = 0.3;
         }
 
         if (intersects.length > 0) {
             hoveredCard = intersects[0].object;
-            hoveredCard.scale.set(1.15, 1.15, 1.15);
-            hoveredCard.position.y = 0.5;
+            hoveredCard.scale.set(1.4, 1.4, 1.4);
+            hoveredCard.position.y += 1;
+            hoveredCard.material.emissive.setHex(0xda70d6);
+            hoveredCard.material.emissiveIntensity = 0.8;
             container.style.cursor = 'pointer';
         } else {
             hoveredCard = null;
@@ -226,15 +248,29 @@ function selectCard(cardMesh) {
     cardMesh.userData.selected = true;
     selectedCards.push(cardMesh.userData.card);
 
-    // 선택된 카드 시각적 효과
-    cardMesh.material.color.setHex(0xda70d6);
+    // 선택된 카드 화려한 효과
+    cardMesh.material.color.setHex(0xffd700);
     cardMesh.material.emissive = new THREE.Color(0xff00ff);
-    cardMesh.material.emissiveIntensity = 0.5;
+    cardMesh.material.emissiveIntensity = 1.0;
+    cardMesh.material.metalness = 0.8;
+
+    // 선택된 카드를 화면 중앙으로 이동
+    const selectedPosition = selectedCards.length - 1;
+    const newX = (selectedPosition - 1) * 3;
+    const newY = 5;
+    const newZ = 5;
+
+    // 애니메이션으로 이동
+    animateCardSelection(cardMesh, newX, newY, newZ);
 
     // 선택 가이드 업데이트
     const guide = document.getElementById('selectionGuide');
     if (guide) {
         guide.innerHTML = `✨ 직관에 따라 카드 3장을 선택하세요 (${selectedCards.length}/3) ✨`;
+        if (selectedCards.length === 3) {
+            guide.innerHTML = '🎴 카드 선택 완료! AI가 해석을 시작합니다...';
+            guide.style.background = 'rgba(255, 215, 0, 0.9)';
+        }
     }
 
     // 3장 선택 완료
@@ -242,26 +278,66 @@ function selectCard(cardMesh) {
         setTimeout(() => {
             lastReadingTime = Date.now();
             requestInterpretation();
-        }, 500);
+        }, 1500);
     }
+}
+
+// 선택된 카드 애니메이션
+function animateCardSelection(cardMesh, targetX, targetY, targetZ) {
+    const duration = 1000; // 1초
+    const startTime = Date.now();
+    const startX = cardMesh.position.x;
+    const startY = cardMesh.position.y;
+    const startZ = cardMesh.position.z;
+    const startRotation = cardMesh.rotation.y;
+
+    function animate() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = easeOutCubic(progress);
+
+        cardMesh.position.x = startX + (targetX - startX) * eased;
+        cardMesh.position.y = startY + (targetY - startY) * eased;
+        cardMesh.position.z = startZ + (targetZ - startZ) * eased;
+        cardMesh.rotation.y = startRotation * (1 - eased);
+        cardMesh.scale.set(1.5, 1.5, 1.5);
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        }
+    }
+    animate();
+}
+
+// Easing 함수
+function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
 }
 
 // 카드 펼치기 애니메이션
 function animateCardSpread() {
-    let progress = 0;
-    const duration = 1500; // 1.5초
+    const duration = 3000; // 3초
     const startTime = Date.now();
 
     function spread() {
-        progress = (Date.now() - startTime) / duration;
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        cardMeshes.forEach((mesh, index) => {
+            // 각 카드마다 약간의 딜레이
+            const cardProgress = Math.max(0, Math.min(1, (progress - mesh.userData.initialDelay) / 0.8));
+            const eased = easeOutCubic(cardProgress);
+
+            // 목표 위치로 이동
+            mesh.position.x = mesh.userData.targetX * eased;
+            mesh.position.y = mesh.userData.targetY * eased;
+            mesh.position.z = mesh.userData.targetZ * eased;
+
+            // 회전
+            mesh.rotation.y = mesh.rotation.y * (1 - eased) + mesh.userData.targetRotationY * eased;
+        });
 
         if (progress < 1) {
-            cardMeshes.forEach(mesh => {
-                const targetX = mesh.userData.targetX;
-                const currentX = mesh.position.x;
-                mesh.position.x = currentX + (targetX - currentX) * 0.1;
-            });
-
             requestAnimationFrame(spread);
         }
     }
@@ -287,19 +363,33 @@ async function requestInterpretation() {
     `;
 
     try {
+        // 프로그레스 바 표시
+        let progressPercent = 0;
+        const progressInterval = setInterval(() => {
+            progressPercent += 5;
+            if (progressPercent <= 90) {
+                document.querySelector('.loading p:first-of-type').innerHTML =
+                    `🔮 AI가 카드를 해석하고 있습니다... ${progressPercent}%`;
+            }
+        }, 200);
+
         const response = await fetch(API_ENDPOINT, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 question: question,
                 cards: selectedCards.map(c => c.name)
-            })
+            }),
+            timeout: 70000 // 70초 타임아웃
         });
 
+        clearInterval(progressInterval);
+
         if (!response.ok) {
-            throw new Error(`서버 오류: ${response.status}`);
+            throw new Error(`서버 응답 오류: ${response.status}`);
         }
 
         const data = await response.json();
@@ -308,7 +398,7 @@ async function requestInterpretation() {
             // Fallback 모드인 경우 알림
             displayInterpretation(data.interpretation +
                 '<p style="margin-top: 20px; padding: 15px; background: rgba(255, 200, 0, 0.2); border-radius: 8px; color: #ffd700;">' +
-                '⚠️ LLM 서버가 응답하지 않아 기본 해석을 제공합니다.</p>');
+                '⚠️ LLM이 응답하지 않아 기본 해석을 제공합니다.</p>');
         } else {
             displayInterpretation(data.interpretation);
         }
@@ -316,19 +406,28 @@ async function requestInterpretation() {
     } catch (error) {
         console.error('API Error:', error);
 
-        // 서버 연결 실패 시 Mock 데이터 사용
+        // 에러 유형에 따라 다른 메시지
+        let errorMessage = '';
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            errorMessage = '네트워크 연결을 확인해주세요.';
+        } else if (error.message.includes('timeout')) {
+            errorMessage = '서버 응답 시간이 초과되었습니다.';
+        } else {
+            errorMessage = 'API 서버에 연결할 수 없습니다.';
+        }
+
+        // 임시 해석으로 자동 전환
         document.getElementById('readingSection').innerHTML = `
-            <div style="text-align: center; padding: 40px;">
-                <h3 style="color: #ff6b6b; margin-bottom: 20px;">❌ 서버 연결 실패</h3>
-                <p style="margin-bottom: 15px;">타로 LLM 서버에 연결할 수 없습니다.</p>
-                <p style="font-size: 0.9rem; color: #c8b3ff;">서버가 실행 중인지 확인해주세요: ${API_ENDPOINT}</p>
-                <p style="margin-top: 20px; color: #9370db;">임시 해석을 표시합니다...</p>
+            <div style="text-align: center; padding: 30px;">
+                <div class="spinner"></div>
+                <p style="margin-top: 20px; color: #ffd700;">🔮 기본 해석을 생성하는 중...</p>
+                <p style="font-size: 0.9rem; color: #c8b3ff; margin-top: 10px;">${errorMessage}</p>
             </div>
         `;
 
         setTimeout(() => {
             displayMockInterpretation();
-        }, 2000);
+        }, 1500);
     }
 }
 
