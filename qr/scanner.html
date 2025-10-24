@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner - arrr.at</title>
+    <meta name="description" content="Free QR code scanner using your device camera. Scan QR codes instantly.">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>QR Code Scanner</h1>
+            <p class="subtitle">Scan QR codes with your camera</p>
+            <nav class="header-nav">
+                <a href="index.html">Generate</a>
+                <a href="scanner.html" class="active">Scan</a>
+                <a href="batch.html">Batch</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="scanner-container">
+                <section class="control-section">
+                    <h2>Camera Scanner</h2>
+                    <div id="reader" style="width: 100%; max-width: 600px; margin: 0 auto;"></div>
+                    <div style="margin-top: 1rem; text-align: center;">
+                        <button id="start-scan" class="btn-primary" style="max-width: 300px;">Start Scanning</button>
+                        <button id="stop-scan" class="btn-primary" style="max-width: 300px; display: none; background: var(--danger-color);">Stop Scanning</button>
+                    </div>
+                </section>
+
+                <section class="control-section" style="margin-top: 2rem;">
+                    <h2>Upload QR Code Image</h2>
+                    <div style="text-align: center;">
+                        <input type="file" id="qr-input-file" accept="image/*" style="display: none;">
+                        <button id="upload-btn" class="btn-primary" style="max-width: 300px;">Choose Image</button>
+                    </div>
+                </section>
+
+                <div id="result-container" style="display: none; margin-top: 2rem;">
+                    <section class="scan-result">
+                        <h3>Scan Result</h3>
+                        <div class="result-content" id="result-text"></div>
+                        <div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button id="copy-result" class="btn-download">Copy to Clipboard</button>
+                            <button id="open-link" class="btn-download" style="display: none;">Open Link</button>
+                        </div>
+                    </section>
+                </div>
+
+                <section class="info-section" style="margin-top: 2rem;">
+                    <h3>How to Use</h3>
+                    <ul class="features-list">
+                        <li>Click "Start Scanning" to use your camera</li>
+                        <li>Point your camera at a QR code</li>
+                        <li>The result will appear automatically</li>
+                        <li>Or upload an image containing a QR code</li>
+                        <li>Works on mobile and desktop devices</li>
+                        <li>No data is sent to any server</li>
+                        <li>100% privacy-focused</li>
+                    </ul>
+                </section>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 <a href="https://arrr.at">arrr.at</a> | QR scanning happens entirely in your browser</p>
+        </footer>
+    </div>
+
+    <script>
+        let html5QrcodeScanner = null;
+
+        const startBtn = document.getElementById('start-scan');
+        const stopBtn = document.getElementById('stop-scan');
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInput = document.getElementById('qr-input-file');
+        const resultContainer = document.getElementById('result-container');
+        const resultText = document.getElementById('result-text');
+        const copyBtn = document.getElementById('copy-result');
+        const openLinkBtn = document.getElementById('open-link');
+
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log(`Scan result: ${decodedText}`, decodedResult);
+            displayResult(decodedText);
+        }
+
+        function onScanError(errorMessage) {
+            // Handle scan error silently
+            console.log(`Scan error: ${errorMessage}`);
+        }
+
+        function displayResult(text) {
+            resultText.textContent = text;
+            resultContainer.style.display = 'block';
+
+            // Check if result is a URL
+            try {
+                new URL(text);
+                openLinkBtn.style.display = 'inline-flex';
+                openLinkBtn.onclick = () => window.open(text, '_blank');
+            } catch {
+                openLinkBtn.style.display = 'none';
+            }
+
+            // Scroll to result
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                html5QrcodeScanner = new Html5Qrcode("reader");
+
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                await html5QrcodeScanner.start(
+                    { facingMode: "environment" },
+                    config,
+                    onScanSuccess,
+                    onScanError
+                );
+
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-block';
+            } catch (err) {
+                console.error('Error starting scanner:', err);
+                alert('Failed to start camera. Please ensure you have granted camera permissions.');
+            }
+        });
+
+        stopBtn.addEventListener('click', async () => {
+            if (html5QrcodeScanner) {
+                try {
+                    await html5QrcodeScanner.stop();
+                    html5QrcodeScanner = null;
+                    startBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'none';
+                } catch (err) {
+                    console.error('Error stopping scanner:', err);
+                }
+            }
+        });
+
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const html5QrCode = new Html5Qrcode("reader");
+                    try {
+                        const decodedText = await html5QrCode.scanFile(file, true);
+                        displayResult(decodedText);
+                    } catch (err) {
+                        console.error('Error scanning file:', err);
+                        alert('No QR code found in the image. Please try another image.');
+                    }
+                };
+                reader.readAsDataURL(file);
+            } catch (err) {
+                console.error('Error reading file:', err);
+                alert('Failed to read the image file.');
+            }
+
+            // Reset file input
+            fileInput.value = '';
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(resultText.textContent);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            }
+        });
+    </script>
+</body>
+</html>

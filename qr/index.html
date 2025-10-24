@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator - arrr.at</title>
+    <meta name="description" content="Free professional QR code generator with logo, colors, and multiple formats. Generate QR codes for URL, WiFi, vCard, and more.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>QR Code Generator</h1>
+            <p class="subtitle">Professional QR codes with customization</p>
+            <nav class="header-nav">
+                <a href="index.html" class="active">Generate</a>
+                <a href="scanner.html">Scan</a>
+                <a href="batch.html">Batch</a>
+            </nav>
+        </header>
+
+        <main>
+            <div class="content-grid">
+                <!-- Left Panel: Controls -->
+                <div class="controls-panel">
+                    <section class="control-section">
+                        <h2>QR Code Type</h2>
+                        <div class="type-selector">
+                            <button class="type-btn active" data-type="text">Text</button>
+                            <button class="type-btn" data-type="url">URL</button>
+                            <button class="type-btn" data-type="email">Email</button>
+                            <button class="type-btn" data-type="phone">Phone</button>
+                            <button class="type-btn" data-type="sms">SMS</button>
+                            <button class="type-btn" data-type="wifi">WiFi</button>
+                            <button class="type-btn" data-type="vcard">vCard</button>
+                            <button class="type-btn" data-type="location">Location</button>
+                        </div>
+                    </section>
+
+                    <section class="control-section">
+                        <h2>Content</h2>
+                        <div id="content-forms">
+                            <!-- Text/URL Form -->
+                            <div class="content-form active" data-form="text">
+                                <label for="text-content">Text or URL</label>
+                                <textarea id="text-content" rows="4" placeholder="Enter text or URL...">https://arrr.at</textarea>
+                            </div>
+
+                            <!-- Email Form -->
+                            <div class="content-form" data-form="email">
+                                <label for="email-address">Email Address</label>
+                                <input type="email" id="email-address" placeholder="user@example.com">
+                                <label for="email-subject">Subject (optional)</label>
+                                <input type="text" id="email-subject" placeholder="Email subject">
+                                <label for="email-body">Message (optional)</label>
+                                <textarea id="email-body" rows="3" placeholder="Email message"></textarea>
+                            </div>
+
+                            <!-- Phone Form -->
+                            <div class="content-form" data-form="phone">
+                                <label for="phone-number">Phone Number</label>
+                                <input type="tel" id="phone-number" placeholder="+1234567890">
+                            </div>
+
+                            <!-- SMS Form -->
+                            <div class="content-form" data-form="sms">
+                                <label for="sms-number">Phone Number</label>
+                                <input type="tel" id="sms-number" placeholder="+1234567890">
+                                <label for="sms-message">Message</label>
+                                <textarea id="sms-message" rows="3" placeholder="SMS message"></textarea>
+                            </div>
+
+                            <!-- WiFi Form -->
+                            <div class="content-form" data-form="wifi">
+                                <label for="wifi-ssid">Network Name (SSID)</label>
+                                <input type="text" id="wifi-ssid" placeholder="MyWiFi">
+                                <label for="wifi-password">Password</label>
+                                <input type="text" id="wifi-password" placeholder="password123">
+                                <label for="wifi-encryption">Encryption</label>
+                                <select id="wifi-encryption">
+                                    <option value="WPA">WPA/WPA2</option>
+                                    <option value="WEP">WEP</option>
+                                    <option value="nopass">None</option>
+                                </select>
+                                <label>
+                                    <input type="checkbox" id="wifi-hidden">
+                                    Hidden Network
+                                </label>
+                            </div>
+
+                            <!-- vCard Form -->
+                            <div class="content-form" data-form="vcard">
+                                <label for="vcard-name">Full Name</label>
+                                <input type="text" id="vcard-name" placeholder="John Doe">
+                                <label for="vcard-phone">Phone</label>
+                                <input type="tel" id="vcard-phone" placeholder="+1234567890">
+                                <label for="vcard-email">Email</label>
+                                <input type="email" id="vcard-email" placeholder="john@example.com">
+                                <label for="vcard-org">Organization</label>
+                                <input type="text" id="vcard-org" placeholder="Company Name">
+                                <label for="vcard-website">Website</label>
+                                <input type="url" id="vcard-website" placeholder="https://example.com">
+                            </div>
+
+                            <!-- Location Form -->
+                            <div class="content-form" data-form="location">
+                                <label for="location-lat">Latitude</label>
+                                <input type="number" id="location-lat" step="any" placeholder="37.7749">
+                                <label for="location-lng">Longitude</label>
+                                <input type="number" id="location-lng" step="any" placeholder="-122.4194">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="control-section">
+                        <h2>Customization</h2>
+
+                        <div class="form-group">
+                            <label for="qr-size">Size: <span id="size-value">300</span>px</label>
+                            <input type="range" id="qr-size" min="100" max="1000" value="300" step="50">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="error-level">Error Correction</label>
+                            <select id="error-level">
+                                <option value="L">Low (7%)</option>
+                                <option value="M" selected>Medium (15%)</option>
+                                <option value="Q">Quartile (25%)</option>
+                                <option value="H">High (30%)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fg-color">Foreground</label>
+                                <input type="color" id="fg-color" value="#000000">
+                            </div>
+                            <div class="form-group">
+                                <label for="bg-color">Background</label>
+                                <input type="color" id="bg-color" value="#ffffff">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="qr-margin">Margin: <span id="margin-value">4</span></label>
+                            <input type="range" id="qr-margin" min="0" max="10" value="4">
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="use-logo">
+                                Add Logo
+                            </label>
+                        </div>
+
+                        <div id="logo-options" class="form-group" style="display: none;">
+                            <label for="logo-file">Logo Image</label>
+                            <input type="file" id="logo-file" accept="image/*">
+                            <label for="logo-size">Logo Size: <span id="logo-size-value">20</span>%</label>
+                            <input type="range" id="logo-size" min="10" max="40" value="20" step="5">
+                        </div>
+                    </section>
+
+                    <section class="control-section">
+                        <button id="generate-btn" class="btn-primary">Generate QR Code</button>
+                    </section>
+                </div>
+
+                <!-- Right Panel: Preview & Download -->
+                <div class="preview-panel">
+                    <section class="preview-section">
+                        <h2>Preview</h2>
+                        <div id="qr-preview" class="qr-preview">
+                            <div class="placeholder">
+                                <svg width="200" height="200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                </svg>
+                                <p>Your QR code will appear here</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="download-section">
+                        <h2>Download</h2>
+                        <div class="download-buttons">
+                            <button id="download-png" class="btn-download" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                PNG
+                            </button>
+                            <button id="download-svg" class="btn-download" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                SVG
+                            </button>
+                            <button id="download-pdf" class="btn-download" disabled>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                PDF
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="info-section">
+                        <h3>Features</h3>
+                        <ul class="features-list">
+                            <li>Multiple QR code types</li>
+                            <li>Custom colors & sizes</li>
+                            <li>Logo overlay support</li>
+                            <li>High quality output</li>
+                            <li>PNG, SVG, PDF formats</li>
+                            <li>No watermarks</li>
+                            <li>100% free to use</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 <a href="https://arrr.at">arrr.at</a> | All QR codes generated are free for commercial use</p>
+        </footer>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Generating QR Code...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

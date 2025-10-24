@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch QR Code Generator - arrr.at</title>
+    <meta name="description" content="Generate multiple QR codes at once. Batch QR code generator for bulk creation.">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Batch QR Code Generator</h1>
+            <p class="subtitle">Generate multiple QR codes at once</p>
+            <nav class="header-nav">
+                <a href="index.html">Generate</a>
+                <a href="scanner.html">Scan</a>
+                <a href="batch.html" class="active">Batch</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="batch-container">
+                <h2>QR Codes List</h2>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">Add up to 100 QR codes to generate in batch</p>
+
+                <div id="batch-items"></div>
+
+                <button id="add-item-btn" class="btn-download" style="margin-top: 1rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add Item
+                </button>
+            </section>
+
+            <section class="control-section" style="margin-top: 1.5rem;">
+                <h2>Batch Settings</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="batch-size">QR Code Size</label>
+                        <select id="batch-size">
+                            <option value="200">200px</option>
+                            <option value="300" selected>300px</option>
+                            <option value="500">500px</option>
+                            <option value="800">800px</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="batch-format">Format</label>
+                        <select id="batch-format">
+                            <option value="png" selected>PNG</option>
+                            <option value="svg">SVG</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="generate-batch-btn" class="btn-primary">Generate All QR Codes</button>
+            </section>
+
+            <div id="batch-results-container" style="display: none; margin-top: 2rem;">
+                <section class="control-section">
+                    <h2>Results</h2>
+                    <div style="margin-bottom: 1rem;">
+                        <button id="download-all-btn" class="btn-download">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download All as ZIP
+                        </button>
+                    </div>
+                    <div id="batch-results" class="batch-results"></div>
+                </section>
+            </div>
+
+            <section class="info-section" style="margin-top: 2rem;">
+                <h3>Batch Generation Tips</h3>
+                <ul class="features-list">
+                    <li>Add items one by one or paste multiple URLs</li>
+                    <li>Maximum 100 QR codes per batch</li>
+                    <li>All QR codes use the same size and format</li>
+                    <li>Download individually or all at once</li>
+                    <li>Great for creating QR codes for events, products, etc.</li>
+                    <li>Each QR code can have a custom name</li>
+                    <li>Fast generation with our optimized API</li>
+                </ul>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 <a href="https://arrr.at">arrr.at</a> | Batch generate QR codes for free</p>
+        </footer>
+    </div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Generating QR Codes...</p>
+    </div>
+
+    <script src="batch.js"></script>
+</body>
+</html>
