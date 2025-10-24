@@ -382,8 +382,7 @@ async function requestInterpretation() {
             body: JSON.stringify({
                 question: question,
                 cards: selectedCards.map(c => c.name)
-            }),
-            timeout: 70000 // 70초 타임아웃
+            })
         });
 
         clearInterval(progressInterval);
