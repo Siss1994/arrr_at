@@ -1,0 +1,24 @@
+# robots.txt for arrr.at
+
+User-agent: *
+Allow: /
+
+# Main pages
+Allow: /index.html
+Allow: /cube/
+Allow: /tarot/
+
+# Static assets
+Allow: /cube/strings.js
+Allow: /tarot/tarot-cards.js
+Allow: /tarot/tarot-app.js
+
+# Disallow any admin or private areas if they exist
+Disallow: /private/
+Disallow: /.git/
+
+# Sitemap
+Sitemap: https://arrr.at/sitemap.xml
+
+# Crawl delay (optional, helps prevent server overload)
+Crawl-delay: 1

@@ -1,0 +1,51 @@
+# llms.txt for arrr.at
+
+# Site Information
+> arrr.at - Interactive Web Applications
+> A collection of interactive web applications including a 3D Rubik's Cube solver and AI-powered tarot readings
+
+# Main Applications
+
+## 3D Rubik's Cube
+- URL: https://arrr.at/cube/
+- Description: Interactive 3D Rubik's Cube with normal mode and competition mode
+- Features: Real-time solving algorithms, leaderboards, keyboard controls, mobile support
+- Technologies: Three.js, JavaScript, WebGL
+- Languages: English, Korean (한국어), Japanese (日本語)
+
+## AI Tarot Reading
+- URL: https://arrr.at/tarot/
+- Description: AI-powered tarot card reading with WebLLM (browser-based AI)
+- Features: Interactive 3D card selection, on-device AI inference, no server required
+- Technologies: WebLLM, Qwen2-0.5B, Three.js, WebGPU
+- Model: Qwen2-0.5B-Instruct (350MB, mobile-friendly)
+- Privacy: All AI processing happens in the browser
+
+# Technical Details
+
+## Cube Application
+- Modes: Normal (practice) and Competition (timed)
+- Controls: Keyboard shortcuts for all faces (F, R, U, L, B, D)
+- Mobile: Touch controls with rotation pad
+- Algorithms: Automatic solving with step-by-step guidance
+- Performance: Optimized for mobile devices
+
+## Tarot Application
+- Cards: Full 78-card tarot deck
+- Selection: Interactive 3D card spread
+- AI: Client-side inference using WebLLM
+- Compatibility: WebGPU-enabled browsers (Chrome 113+, Edge 113+)
+- Fallback: Provides basic interpretation if WebGPU unavailable
+
+# Contact & Links
+- GitHub: https://github.com/Siss1994/arrr_at
+- Live Site: https://arrr.at
+
+# Crawling Guidelines
+- Respect robots.txt directives
+- Rate limit: Maximum 1 request per second
+- User-Agent: Please identify your crawler
+- Content updates: Check weekly for new features
+
+# SEO Keywords
+Rubik's Cube, 3D puzzle, cube solver, competition mode, tarot reading, AI tarot, WebLLM, browser AI, Qwen2, interactive games, web applications, Three.js, WebGPU, mobile games
