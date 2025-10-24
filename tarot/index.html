@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>신비로운 타로 - AI 타로 리딩</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #1a0033 0%, #2d004d 50%, #0d0020 100%);
+            color: #f0e6ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        #container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(75, 0, 130, 0.3);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(138, 43, 226, 0.5);
+        }
+
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #c8b3ff;
+        }
+
+        #questionSection {
+            background: rgba(50, 0, 80, 0.6);
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+        }
+
+        #question {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.1rem;
+            background: rgba(30, 0, 50, 0.8);
+            border: 2px solid #8a2be2;
+            border-radius: 10px;
+            color: #f0e6ff;
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        #question::placeholder {
+            color: #9370db;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #8a2be2, #da70d6);
+            color: white;
+            box-shadow: 0 5px 20px rgba(138, 43, 226, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 25px rgba(138, 43, 226, 0.6);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #canvasContainer {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: rgba(20, 0, 40, 0.6);
+            border-radius: 15px;
+            margin: 30px 0;
+            overflow: hidden;
+            display: none;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+        }
+
+        #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+
+        #readingSection {
+            background: rgba(50, 0, 80, 0.6);
+            padding: 40px;
+            border-radius: 15px;
+            margin-top: 30px;
+            display: none;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+        }
+
+        .card-info {
+            background: rgba(75, 0, 130, 0.4);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #da70d6;
+        }
+
+        .card-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ff00ff;
+            margin-bottom: 10px;
+        }
+
+        .interpretation {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #e6d5ff;
+        }
+
+        .highlight {
+            background: rgba(138, 43, 226, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: #ffd700;
+        }
+
+        #cooldownMessage {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 100, 100, 0.2);
+            border-radius: 10px;
+            color: #ffaaaa;
+            display: none;
+            border: 2px solid rgba(255, 100, 100, 0.4);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: #c8b3ff;
+        }
+
+        .spinner {
+            border: 4px solid rgba(138, 43, 226, 0.3);
+            border-top: 4px solid #da70d6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+            color: #9370db;
+            border-top: 2px solid rgba(138, 43, 226, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            #questionSection,
+            #readingSection {
+                padding: 20px;
+            }
+
+            #canvasContainer {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <header>
+            <h1>🔮 신비로운 타로 🔮</h1>
+            <p class="subtitle">AI가 당신의 운명을 읽어드립니다</p>
+        </header>
+
+        <div id="questionSection">
+            <h2 style="margin-bottom: 20px;">무엇이 궁금하신가요?</h2>
+            <textarea id="question" placeholder="타로에 물어보고 싶은 질문을 입력하세요...&#10;예: 새로운 프로젝트를 시작해야 할까요?"></textarea>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-primary" id="drawButton" onclick="startReading()">
+                    🎴 카드 뽑기
+                </button>
+            </div>
+        </div>
+
+        <div id="cooldownMessage">
+            ⏱️ 다음 리딩까지 <span id="cooldownTimer">20</span>초 남았습니다.
+        </div>
+
+        <div id="canvasContainer">
+            <canvas id="canvas3d"></canvas>
+        </div>
+
+        <div id="readingSection">
+            <h2 style="margin-bottom: 20px;">🌟 타로 리딩 결과</h2>
+            <div id="cardsResult"></div>
+            <div id="interpretation" class="interpretation"></div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-primary" onclick="resetReading()">
+                    🔄 다시 보기
+                </button>
+            </div>
+        </div>
+
+        <footer>
+            <p>✨ 타로는 당신의 내면을 비추는 거울입니다 ✨</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">첫 1회 무료 | 이후 20초마다 이용 가능</p>
+        </footer>
+    </div>
+
+    <script src="tarot-cards.js"></script>
+    <script src="tarot-app.js"></script>
+</body>
+</html>
