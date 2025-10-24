@@ -1,6 +1,6 @@
 // State
 let currentType = 'text';
-let currentQRCanvas = null;
+let currentQRCode = null;
 let currentQRDataURL = null;
 
 // DOM Elements
@@ -207,7 +207,7 @@ function showLoading(show) {
     }
 }
 
-// Generate QR Code (Client-side using QRious)
+// Generate QR Code using qr-code-styling (MIT License)
 async function generateQRCode() {
     const data = getFormData();
 
@@ -223,6 +223,8 @@ async function generateQRCode() {
         const size = parseInt(sizeInput.value);
         const fgColor = document.getElementById('fg-color').value;
         const bgColor = document.getElementById('bg-color').value;
+        const errorLevel = document.getElementById('error-level').value;
+        const margin = parseInt(marginInput.value);
         const useLogo = useLogoCheckbox.checked;
         const logoFile = document.getElementById('logo-file').files[0];
 
@@ -232,29 +234,55 @@ async function generateQRCode() {
             return;
         }
 
-        // Create canvas using QRious
-        const canvas = document.createElement('canvas');
-        const qr = new QRious({
-            element: canvas,
-            value: qrData,
-            size: size,
-            background: bgColor,
-            foreground: fgColor,
-            level: document.getElementById('error-level').value
-        });
+        // Prepare QR code options
+        const options = {
+            width: size,
+            height: size,
+            data: qrData,
+            margin: margin,
+            qrOptions: {
+                typeNumber: 0,
+                mode: 'Byte',
+                errorCorrectionLevel: errorLevel
+            },
+            dotsOptions: {
+                color: fgColor,
+                type: 'square'
+            },
+            backgroundOptions: {
+                color: bgColor
+            }
+        };
 
-        // If logo is required, overlay it
+        // Add logo if selected
         if (useLogo && logoFile) {
-            await overlayLogo(canvas, logoFile, size);
+            const logoSizePercent = parseInt(logoSizeInput.value) / 100;
+            const reader = new FileReader();
+
+            await new Promise((resolve, reject) => {
+                reader.onload = (e) => {
+                    options.image = e.target.result;
+                    options.imageOptions = {
+                        hideBackgroundDots: true,
+                        imageSize: logoSizePercent,
+                        margin: 5
+                    };
+                    resolve();
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(logoFile);
+            });
         }
 
-        // Store canvas for download
-        currentQRCanvas = canvas;
-        currentQRDataURL = canvas.toDataURL('image/png');
+        // Create QR code
+        currentQRCode = new QRCodeStyling(options);
 
         // Display preview
         qrPreview.innerHTML = '';
-        qrPreview.appendChild(canvas);
+        currentQRCode.append(qrPreview);
+
+        // Store data URL for download
+        currentQRDataURL = await currentQRCode.getRawData('png');
 
         // Enable download buttons
         downloadPngBtn.disabled = false;
@@ -269,44 +297,9 @@ async function generateQRCode() {
     }
 }
 
-// Overlay logo on QR code canvas
-async function overlayLogo(canvas, logoFile, qrSize) {
-    return new Promise((resolve, reject) => {
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            img.onload = () => {
-                const logoSizePercent = parseInt(logoSizeInput.value) / 100;
-                const logoPixelSize = Math.floor(qrSize * logoSizePercent);
-                const bgColor = document.getElementById('bg-color').value;
-
-                // Calculate center position
-                const x = (canvas.width - logoPixelSize - 20) / 2;
-                const y = (canvas.height - logoPixelSize - 20) / 2;
-
-                // Draw white background circle
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(x, y, logoPixelSize + 20, logoPixelSize + 20);
-
-                // Draw logo
-                ctx.drawImage(img, x + 10, y + 10, logoPixelSize, logoPixelSize);
-
-                resolve();
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
-        };
-
-        reader.onerror = reject;
-        reader.readAsDataURL(logoFile);
-    });
-}
-
 // Download QR Code
 async function downloadQRCode(format) {
-    if (!currentQRCanvas) {
+    if (!currentQRCode) {
         alert('Please generate a QR code first');
         return;
     }
@@ -315,16 +308,9 @@ async function downloadQRCode(format) {
 
     try {
         if (format === 'png') {
-            // Download PNG
-            const link = document.createElement('a');
-            link.download = 'qrcode.png';
-            link.href = currentQRDataURL;
-            link.click();
-
+            await currentQRCode.download({ name: 'qrcode', extension: 'png' });
         } else if (format === 'svg') {
-            // For SVG, regenerate without logo (simpler)
-            alert('SVG download coming soon! Please use PNG for now.');
-
+            await currentQRCode.download({ name: 'qrcode', extension: 'svg' });
         } else if (format === 'pdf') {
             // Generate PDF using jsPDF
             const { jsPDF } = window.jspdf;
@@ -343,8 +329,16 @@ async function downloadQRCode(format) {
             pdf.setFontSize(20);
             pdf.text('QR Code', 105, 30, { align: 'center' });
 
-            // Add QR code image
-            pdf.addImage(currentQRDataURL, 'PNG', x, y, pdfSize, pdfSize);
+            // Get PNG data and add to PDF
+            const pngData = await currentQRCode.getRawData('png');
+            const blob = new Blob([pngData], { type: 'image/png' });
+            const dataUrl = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+            });
+
+            pdf.addImage(dataUrl, 'PNG', x, y, pdfSize, pdfSize);
 
             // Add footer
             pdf.setFontSize(10);
