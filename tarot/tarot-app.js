@@ -5,7 +5,7 @@ let allCards = []; // 섞인 전체 카드 덱
 let selectedCards = []; // 사용자가 선택한 카드
 let lastReadingTime = 0;
 const COOLDOWN_MS = 20000; // 20초
-const API_ENDPOINT = 'http://localhost:5051/api/tarot/interpret'; // LLM 서버 주소
+const API_ENDPOINT = '/api/tarot/interpret'; // LLM 서버 주소 (nginx proxy)
 
 // 쿨다운 체크
 function checkCooldown() {
