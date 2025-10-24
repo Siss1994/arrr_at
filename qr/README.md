@@ -33,78 +33,30 @@ Professional QR code generator with advanced customization features.
 
 ## Technical Stack
 
-### Frontend
+### 100% Client-Side (No Server Required!)
 - Pure HTML5, CSS3, JavaScript
 - Responsive design
 - No framework dependencies
+- Works completely offline
 
-### Backend API
-- Node.js + Express
-- QR generation: `qrcode` (MIT License)
-- Image processing: `jimp` (MIT License)
-- PDF generation: `pdfkit` (MIT License)
+### Libraries (CDN)
+- QR generation: `qrcode.js` (MIT License)
+- PDF generation: `jsPDF` (MIT License)
+- Canvas API for logo overlay
 
 ### License
 All components use MIT License - **fully commercial-friendly**
 
-## API Documentation
+## How It Works
 
-### Generate QR Code
-```bash
-POST /api/qr/generate
-Content-Type: application/json
+Everything happens in your browser:
 
-{
-  "type": "text",
-  "data": { "content": "Hello World" },
-  "format": "png",
-  "size": 300,
-  "color": {
-    "dark": "#000000",
-    "light": "#FFFFFF"
-  },
-  "errorCorrectionLevel": "M",
-  "margin": 4
-}
-```
+1. **Enter data** - Type your text, URL, WiFi credentials, etc.
+2. **Customize** - Choose colors, size, add logo
+3. **Generate** - QR code created instantly using JavaScript
+4. **Download** - Save as PNG, SVG, or PDF
 
-### Generate with Logo
-```bash
-POST /api/qr/generate-with-logo
-Content-Type: multipart/form-data
-
-logo: <file>
-options: <JSON string>
-data: <JSON string>
-```
-
-### Generate PDF
-```bash
-POST /api/qr/generate-pdf
-Content-Type: application/json
-
-{
-  "type": "url",
-  "data": { "content": "https://arrr.at" },
-  "size": 300,
-  "title": "My QR Code"
-}
-```
-
-### Batch Generate
-```bash
-POST /api/qr/batch-generate
-Content-Type: application/json
-
-{
-  "items": [
-    { "name": "QR1", "type": "text", "data": { "content": "Item 1" } },
-    { "name": "QR2", "type": "url", "data": { "content": "https://example.com" } }
-  ],
-  "format": "png",
-  "size": 300
-}
-```
+**No server involved!** Your data never leaves your device.
 
 ## Usage
 
@@ -118,31 +70,32 @@ Visit: `http://arrr.at/qr/` (or `https://arrr.at/qr/` with SSL)
 
 ## Installation
 
-### Backend Setup
+No installation needed! Just open the HTML file in any modern browser.
+
+### For Development
 ```bash
-cd /home/arrr/qr-generator-api
-npm install
-npm start
+# Clone the repo
+git clone https://github.com/Siss1994/arrr_at.git
+
+# Open in browser
+cd arrr_at/qr
+open index.html  # or just double-click the file
 ```
 
-### Service Management
-```bash
-# Start service
-sudo systemctl start qr-generator-api
-
-# Stop service
-sudo systemctl stop qr-generator-api
-
-# View logs
-tail -f /home/arrr/qr-generator-api/logs/output.log
-```
+### Deploy Anywhere
+Simply upload the `qr/` folder to any web server or hosting service:
+- GitHub Pages
+- Netlify
+- Vercel
+- Any static file hosting
 
 ## Privacy & Security
-- No data collection
-- All processing happens server-side
-- QR scanner works entirely in browser
-- No external API calls
-- No user tracking
+- ✅ **100% Client-Side** - Everything happens in your browser
+- ✅ **No Data Collection** - Nothing sent to any server
+- ✅ **Works Offline** - Once loaded, works without internet
+- ✅ **No External APIs** - All libraries loaded via CDN or locally
+- ✅ **No User Tracking** - Zero analytics or monitoring
+- ✅ **Open Source** - Full transparency
 
 ## Commercial Use
 ✅ **100% Free for Commercial Use**
