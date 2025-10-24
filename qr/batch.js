@@ -1,5 +1,4 @@
 // Configuration
-const API_BASE_URL = '/api/qr';
 const MAX_ITEMS = 100;
 
 // State
@@ -85,8 +84,7 @@ function getBatchData() {
         if (content) {
             items.push({
                 name: name || `qr-${items.length + 1}`,
-                type: 'text',
-                data: { content }
+                content: content
             });
         }
     });
@@ -103,7 +101,7 @@ function showLoading(show) {
     }
 }
 
-// Generate batch
+// Generate batch (Client-side)
 async function generateBatch() {
     const items = getBatchData();
 
@@ -113,26 +111,55 @@ async function generateBatch() {
     }
 
     showLoading(true);
+    batchResults = [];
 
     try {
-        const response = await fetch(`${API_BASE_URL}/batch-generate`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                items: items,
-                format: batchFormat.value,
-                size: parseInt(batchSize.value)
-            })
-        });
+        const size = parseInt(batchSize.value);
+        const format = batchFormat.value;
 
-        if (!response.ok) {
-            throw new Error('Failed to generate batch QR codes');
+        for (const item of items) {
+            try {
+                if (format === 'png') {
+                    // Generate PNG
+                    const canvas = document.createElement('canvas');
+                    await QRCode.toCanvas(canvas, item.content, {
+                        width: size,
+                        margin: 4,
+                        errorCorrectionLevel: 'M'
+                    });
+
+                    const dataURL = canvas.toDataURL('image/png');
+                    batchResults.push({
+                        success: true,
+                        name: item.name,
+                        format: 'png',
+                        data: dataURL,
+                        canvas: canvas
+                    });
+                } else {
+                    // Generate SVG
+                    const svgString = await QRCode.toString(item.content, {
+                        type: 'svg',
+                        width: size,
+                        margin: 4,
+                        errorCorrectionLevel: 'M'
+                    });
+
+                    batchResults.push({
+                        success: true,
+                        name: item.name,
+                        format: 'svg',
+                        data: svgString
+                    });
+                }
+            } catch (error) {
+                batchResults.push({
+                    success: false,
+                    name: item.name,
+                    error: error.message
+                });
+            }
         }
-
-        const data = await response.json();
-        batchResults = data.results;
 
         displayResults();
         showLoading(false);
@@ -152,28 +179,37 @@ function displayResults() {
         resultDiv.className = 'batch-result-item';
 
         if (result.success) {
-            const format = result.format;
-            let imageSrc;
+            if (result.format === 'png') {
+                const img = document.createElement('img');
+                img.src = result.data;
+                img.alt = result.name;
 
-            if (format === 'svg') {
-                const blob = new Blob([result.data], { type: 'image/svg+xml' });
-                imageSrc = URL.createObjectURL(blob);
+                resultDiv.appendChild(img);
             } else {
-                imageSrc = `data:image/png;base64,${result.data}`;
+                // SVG
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(result.data, 'image/svg+xml');
+                const svgElement = svgDoc.documentElement;
+                resultDiv.appendChild(svgElement);
             }
 
-            resultDiv.innerHTML = `
-                <img src="${imageSrc}" alt="${result.name}">
-                <div class="name">${result.name}</div>
-                <button class="btn-download" onclick="downloadSingle(${index})">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download
-                </button>
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'name';
+            nameDiv.textContent = result.name;
+            resultDiv.appendChild(nameDiv);
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'btn-download';
+            downloadBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download
             `;
+            downloadBtn.onclick = () => downloadSingle(index);
+            resultDiv.appendChild(downloadBtn);
         } else {
             resultDiv.innerHTML = `
                 <div style="color: var(--danger-color); padding: 2rem;">
@@ -191,45 +227,38 @@ function displayResults() {
 }
 
 // Download single QR code
-window.downloadSingle = function(index) {
+function downloadSingle(index) {
     const result = batchResults[index];
     if (!result || !result.success) return;
 
     const format = result.format;
     const filename = `${result.name}.${format}`;
 
-    let blob;
-    if (format === 'svg') {
-        blob = new Blob([result.data], { type: 'image/svg+xml' });
+    if (format === 'png') {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = result.data;
+        link.click();
     } else {
-        const byteCharacters = atob(result.data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        blob = new Blob([byteArray], { type: 'image/png' });
+        // SVG
+        const blob = new Blob([result.data], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
     }
+}
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-};
-
-// Download all as ZIP (simple implementation - downloads one by one)
+// Download all
 async function downloadAll() {
     if (batchResults.length === 0) return;
 
-    // For simplicity, download each file individually
-    // In production, you might want to use JSZip library
+    // Download each file individually with delay
     for (let i = 0; i < batchResults.length; i++) {
         if (batchResults[i].success) {
-            window.downloadSingle(i);
+            downloadSingle(i);
             await new Promise(resolve => setTimeout(resolve, 300)); // Small delay between downloads
         }
     }

@@ -1,10 +1,7 @@
-// Configuration
-const API_BASE_URL = '/api/qr';
-
 // State
 let currentType = 'text';
-let currentQRData = null;
-let currentFormat = 'png';
+let currentQRCanvas = null;
+let currentQRDataURL = null;
 
 // DOM Elements
 const typeButtons = document.querySelectorAll('.type-btn');
@@ -141,6 +138,36 @@ function getFormData() {
     }
 }
 
+// Generate QR data string based on type
+function generateQRData(type, data) {
+    switch (type) {
+        case 'url':
+        case 'text':
+            return data.content;
+
+        case 'email':
+            return `mailto:${data.email}?subject=${encodeURIComponent(data.subject || '')}&body=${encodeURIComponent(data.body || '')}`;
+
+        case 'phone':
+            return `tel:${data.phone}`;
+
+        case 'sms':
+            return `sms:${data.phone}?body=${encodeURIComponent(data.message || '')}`;
+
+        case 'wifi':
+            return `WIFI:T:${data.encryption || 'WPA'};S:${data.ssid};P:${data.password};H:${data.hidden ? 'true' : 'false'};;`;
+
+        case 'vcard':
+            return `BEGIN:VCARD\nVERSION:3.0\nFN:${data.name}\nTEL:${data.phone || ''}\nEMAIL:${data.email || ''}\nORG:${data.organization || ''}\nURL:${data.website || ''}\nEND:VCARD`;
+
+        case 'location':
+            return `geo:${data.latitude},${data.longitude}`;
+
+        default:
+            return data.content;
+    }
+}
+
 // Validate form data
 function validateFormData(data) {
     switch (currentType) {
@@ -180,7 +207,7 @@ function showLoading(show) {
     }
 }
 
-// Generate QR Code
+// Generate QR Code (Client-side)
 async function generateQRCode() {
     const data = getFormData();
 
@@ -192,6 +219,12 @@ async function generateQRCode() {
     showLoading(true);
 
     try {
+        const qrData = generateQRData(currentType, data);
+        const size = parseInt(sizeInput.value);
+        const fgColor = document.getElementById('fg-color').value;
+        const bgColor = document.getElementById('bg-color').value;
+        const errorLevel = document.getElementById('error-level').value;
+        const margin = parseInt(marginInput.value);
         const useLogo = useLogoCheckbox.checked;
         const logoFile = document.getElementById('logo-file').files[0];
 
@@ -201,61 +234,32 @@ async function generateQRCode() {
             return;
         }
 
-        const options = {
-            type: currentType,
-            data: data,
-            size: parseInt(sizeInput.value),
+        // Create canvas
+        const canvas = document.createElement('canvas');
+
+        // Generate QR code on canvas
+        await QRCode.toCanvas(canvas, qrData, {
+            width: size,
+            margin: margin,
             color: {
-                dark: document.getElementById('fg-color').value,
-                light: document.getElementById('bg-color').value
+                dark: fgColor,
+                light: bgColor
             },
-            errorCorrectionLevel: document.getElementById('error-level').value,
-            margin: parseInt(marginInput.value)
-        };
+            errorCorrectionLevel: errorLevel
+        });
 
-        let imageData;
-
-        if (useLogo) {
-            // Generate with logo
-            const formData = new FormData();
-            formData.append('logo', logoFile);
-            formData.append('options', JSON.stringify(options));
-            formData.append('data', JSON.stringify(data));
-
-            const response = await fetch(`${API_BASE_URL}/generate-with-logo`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to generate QR code with logo');
-            }
-
-            const blob = await response.blob();
-            imageData = URL.createObjectURL(blob);
-        } else {
-            // Generate without logo
-            const response = await fetch(`${API_BASE_URL}/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ ...options, format: 'png' })
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', errorText);
-                throw new Error(`Failed to generate QR code: ${response.status} ${response.statusText}`);
-            }
-
-            const blob = await response.blob();
-            imageData = URL.createObjectURL(blob);
+        // If logo is required, overlay it
+        if (useLogo && logoFile) {
+            await overlayLogo(canvas, logoFile, size);
         }
 
+        // Store canvas for download
+        currentQRCanvas = canvas;
+        currentQRDataURL = canvas.toDataURL('image/png');
+
         // Display preview
-        qrPreview.innerHTML = `<img src="${imageData}" alt="QR Code">`;
-        currentQRData = { options, imageData };
+        qrPreview.innerHTML = '';
+        qrPreview.appendChild(canvas);
 
         // Enable download buttons
         downloadPngBtn.disabled = false;
@@ -265,14 +269,49 @@ async function generateQRCode() {
         showLoading(false);
     } catch (error) {
         console.error('Error generating QR code:', error);
-        alert(`Failed to generate QR code: ${error.message}\n\nPlease check the browser console for more details.`);
+        alert(`Failed to generate QR code: ${error.message}`);
         showLoading(false);
     }
 }
 
+// Overlay logo on QR code canvas
+async function overlayLogo(canvas, logoFile, qrSize) {
+    return new Promise((resolve, reject) => {
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            img.onload = () => {
+                const logoSizePercent = parseInt(logoSizeInput.value) / 100;
+                const logoPixelSize = Math.floor(qrSize * logoSizePercent);
+                const bgColor = document.getElementById('bg-color').value;
+
+                // Calculate center position
+                const x = (canvas.width - logoPixelSize - 20) / 2;
+                const y = (canvas.height - logoPixelSize - 20) / 2;
+
+                // Draw white background circle
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(x, y, logoPixelSize + 20, logoPixelSize + 20);
+
+                // Draw logo
+                ctx.drawImage(img, x + 10, y + 10, logoPixelSize, logoPixelSize);
+
+                resolve();
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+
+        reader.onerror = reject;
+        reader.readAsDataURL(logoFile);
+    });
+}
+
 // Download QR Code
 async function downloadQRCode(format) {
-    if (!currentQRData) {
+    if (!currentQRCanvas) {
         alert('Please generate a QR code first');
         return;
     }
@@ -280,78 +319,76 @@ async function downloadQRCode(format) {
     showLoading(true);
 
     try {
-        const data = getFormData();
-        const options = {
-            type: currentType,
-            data: data,
-            size: parseInt(sizeInput.value),
-            color: {
-                dark: document.getElementById('fg-color').value,
-                light: document.getElementById('bg-color').value
-            },
-            errorCorrectionLevel: document.getElementById('error-level').value,
-            margin: parseInt(marginInput.value)
-        };
-
-        let blob;
-        let filename;
-
         if (format === 'png') {
-            // Use current preview image
-            const img = qrPreview.querySelector('img');
-            if (img) {
-                const response = await fetch(img.src);
-                blob = await response.blob();
-                filename = 'qrcode.png';
-            }
+            // Download PNG
+            const link = document.createElement('a');
+            link.download = 'qrcode.png';
+            link.href = currentQRDataURL;
+            link.click();
+
         } else if (format === 'svg') {
             // Generate SVG
-            const response = await fetch(`${API_BASE_URL}/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+            const data = getFormData();
+            const qrData = generateQRData(currentType, data);
+            const size = parseInt(sizeInput.value);
+            const fgColor = document.getElementById('fg-color').value;
+            const bgColor = document.getElementById('bg-color').value;
+            const errorLevel = document.getElementById('error-level').value;
+            const margin = parseInt(marginInput.value);
+
+            const svgString = await QRCode.toString(qrData, {
+                type: 'svg',
+                width: size,
+                margin: margin,
+                color: {
+                    dark: fgColor,
+                    light: bgColor
                 },
-                body: JSON.stringify({ ...options, format: 'svg' })
+                errorCorrectionLevel: errorLevel
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to generate SVG');
-            }
+            const blob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'qrcode.svg';
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
 
-            blob = await response.blob();
-            filename = 'qrcode.svg';
         } else if (format === 'pdf') {
-            // Generate PDF
-            const response = await fetch(`${API_BASE_URL}/generate-pdf`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ ...options, title: 'QR Code' })
+            // Generate PDF using jsPDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to generate PDF');
-            }
+            const size = parseInt(sizeInput.value);
+            const pdfSize = 150; // 150mm size in PDF
+            const x = (210 - pdfSize) / 2; // Center on A4 (210mm wide)
+            const y = 50;
 
-            blob = await response.blob();
-            filename = 'qrcode.pdf';
+            // Add title
+            pdf.setFontSize(20);
+            pdf.text('QR Code', 105, 30, { align: 'center' });
+
+            // Add QR code image
+            pdf.addImage(currentQRDataURL, 'PNG', x, y, pdfSize, pdfSize);
+
+            // Add footer
+            pdf.setFontSize(10);
+            pdf.text(`Type: ${currentType}`, 105, y + pdfSize + 20, { align: 'center' });
+            pdf.text(`Generated: ${new Date().toLocaleString()}`, 105, y + pdfSize + 30, { align: 'center' });
+            pdf.text('Generated with arrr.at/qr', 105, y + pdfSize + 40, { align: 'center' });
+
+            pdf.save('qrcode.pdf');
         }
-
-        // Download file
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
 
         showLoading(false);
     } catch (error) {
         console.error('Error downloading QR code:', error);
-        alert('Failed to download QR code. Please try again.');
+        alert(`Failed to download: ${error.message}`);
         showLoading(false);
     }
 }
