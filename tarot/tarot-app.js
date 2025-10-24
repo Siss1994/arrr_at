@@ -5,7 +5,10 @@ let allCards = []; // 섞인 전체 카드 덱
 let selectedCards = []; // 사용자가 선택한 카드
 let lastReadingTime = 0;
 const COOLDOWN_MS = 20000; // 20초
-const API_ENDPOINT = 'https://s.arrr.at/api/tarot/interpret'; // LLM 서버 주소 (s.arrr.at)
+
+// WebLLM 엔진
+let llmEngine = null;
+let modelLoaded = false;
 
 // 쿨다운 체크
 function checkCooldown() {
@@ -345,7 +348,28 @@ function animateCardSpread() {
     spread();
 }
 
-// 타로 해석 요청 (LLM)
+// WebLLM 엔진 초기화
+async function initWebLLM(onProgress) {
+    if (llmEngine && modelLoaded) {
+        return llmEngine;
+    }
+
+    if (!window.webllm) {
+        throw new Error('WebLLM이 로드되지 않았습니다.');
+    }
+
+    llmEngine = await window.webllm.CreateMLCEngine(
+        "Llama-3.2-1B-Instruct-q4f16_1-MLC", // 작고 빠른 모델
+        {
+            initProgressCallback: onProgress
+        }
+    );
+
+    modelLoaded = true;
+    return llmEngine;
+}
+
+// 타로 해석 요청 (WebLLM)
 async function requestInterpretation() {
     const question = document.getElementById('question').value;
 
@@ -357,72 +381,96 @@ async function requestInterpretation() {
     document.getElementById('readingSection').innerHTML = `
         <div class="loading">
             <div class="spinner"></div>
-            <p>🔮 AI가 카드를 해석하고 있습니다...</p>
+            <p id="loadingText">🔮 AI 모델을 로딩 중입니다...</p>
+            <p id="loadingProgress" style="margin-top: 10px; font-size: 0.9rem; color: #c8b3ff;"></p>
             <p style="margin-top: 10px; font-size: 0.9rem; color: #c8b3ff;">선택한 카드: ${selectedCards.map(c => c.name).join(', ')}</p>
         </div>
     `;
 
     try {
-        // 프로그레스 바 표시
-        let progressPercent = 0;
-        const progressInterval = setInterval(() => {
-            progressPercent += 5;
-            if (progressPercent <= 90) {
-                document.querySelector('.loading p:first-of-type').innerHTML =
-                    `🔮 AI가 카드를 해석하고 있습니다... ${progressPercent}%`;
+        // WebLLM 초기화
+        const engine = await initWebLLM((report) => {
+            const progressText = document.getElementById('loadingProgress');
+            if (progressText) {
+                progressText.textContent = report.text;
             }
-        }, 200);
-
-        const response = await fetch(API_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                question: question,
-                cards: selectedCards.map(c => c.name)
-            })
         });
 
-        clearInterval(progressInterval);
+        // 모델 로딩 완료 후 해석 시작
+        document.getElementById('loadingText').textContent = '🔮 AI가 카드를 해석하고 있습니다...';
+        document.getElementById('loadingProgress').textContent = '';
 
-        if (!response.ok) {
-            throw new Error(`서버 응답 오류: ${response.status}`);
-        }
+        // 타로 해석 프롬프트
+        const prompt = `당신은 전문 타로 리더입니다. 다음 질문과 선택된 카드를 바탕으로 간결하고 의미있는 타로 해석을 제공하세요.
 
-        const data = await response.json();
+질문: ${question}
+선택된 카드: ${selectedCards.map(c => c.name).join(', ')}
 
-        if (data.fallback) {
-            // Fallback 모드인 경우 알림
-            displayInterpretation(data.interpretation +
-                '<p style="margin-top: 20px; padding: 15px; background: rgba(255, 200, 0, 0.2); border-radius: 8px; color: #ffd700;">' +
-                '⚠️ LLM이 응답하지 않아 기본 해석을 제공합니다.</p>');
-        } else {
-            displayInterpretation(data.interpretation);
-        }
+각 카드가 나타내는 의미(과거/원인, 현재/상황, 미래/결과)를 2-3문장으로 해석하고, 마지막에 종합 조언을 주세요.
+한국어로 작성하고, 신비롭고 따뜻한 어조를 사용하세요.`;
 
-    } catch (error) {
-        console.error('API Error:', error);
+        const messages = [
+            {
+                role: "user",
+                content: prompt
+            }
+        ];
 
-        // 에러 유형에 따라 다른 메시지
-        let errorMessage = '';
-        if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            errorMessage = '네트워크 연결을 확인해주세요.';
-        } else if (error.message.includes('timeout')) {
-            errorMessage = '서버 응답 시간이 초과되었습니다.';
-        } else {
-            errorMessage = 'API 서버에 연결할 수 없습니다.';
-        }
+        const reply = await engine.chat.completions.create({
+            messages,
+            temperature: 0.7,
+            max_tokens: 500,
+        });
 
-        // 임시 해석으로 자동 전환
-        document.getElementById('readingSection').innerHTML = `
-            <div style="text-align: center; padding: 30px;">
-                <div class="spinner"></div>
-                <p style="margin-top: 20px; color: #ffd700;">🔮 기본 해석을 생성하는 중...</p>
-                <p style="font-size: 0.9rem; color: #c8b3ff; margin-top: 10px;">${errorMessage}</p>
+        const interpretation = reply.choices[0].message.content;
+
+        // 해석 결과 포맷팅
+        const formattedInterpretation = `
+            <div class="card-info">
+                <div class="card-name">🎴 ${selectedCards[0].name} (과거/원인)</div>
+            </div>
+            <div class="card-info">
+                <div class="card-name">🎴 ${selectedCards[1].name} (현재/상황)</div>
+            </div>
+            <div class="card-info">
+                <div class="card-name">🎴 ${selectedCards[2].name} (미래/결과)</div>
+            </div>
+            <div class="interpretation" style="margin-top: 20px; padding: 20px; background: rgba(138, 43, 226, 0.2); border-radius: 10px;">
+                ${interpretation.replace(/\n/g, '<br>')}
+            </div>
+            <div style="margin-top: 20px; padding: 15px; background: rgba(100, 200, 255, 0.1); border-radius: 8px; color: #a0d0ff; font-size: 0.9rem;">
+                ✨ 이 해석은 브라우저에서 직접 실행되는 AI 모델(Llama 3.2)이 생성했습니다.
             </div>
         `;
+
+        displayInterpretation(formattedInterpretation);
+
+    } catch (error) {
+        console.error('WebLLM Error:', error);
+
+        // WebLLM 지원 여부 확인
+        if (!navigator.gpu) {
+            document.getElementById('readingSection').innerHTML = `
+                <div style="text-align: center; padding: 30px;">
+                    <p style="color: #ff8080; font-size: 1.2rem; margin-bottom: 20px;">⚠️ WebGPU 미지원</p>
+                    <p style="color: #c8b3ff; margin-bottom: 20px;">
+                        이 브라우저는 WebGPU를 지원하지 않습니다.<br>
+                        Chrome 113+ 또는 Edge 113+ 브라우저를 사용해주세요.
+                    </p>
+                    <p style="color: #ffd700; margin-top: 20px;">기본 해석을 표시합니다...</p>
+                </div>
+            `;
+        } else {
+            document.getElementById('readingSection').innerHTML = `
+                <div style="text-align: center; padding: 30px;">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 20px; color: #ffd700;">🔮 기본 해석을 생성하는 중...</p>
+                    <p style="font-size: 0.9rem; color: #c8b3ff; margin-top: 10px;">
+                        AI 모델 로딩에 실패했습니다: ${error.message}
+                    </p>
+                </div>
+            `;
+        }
 
         setTimeout(() => {
             displayMockInterpretation();
