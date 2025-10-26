@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>신비로운 타로 - AI 타로 리딩</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.158.0/three.min.js"></script>
+    <title>신비로운 타로 리딩</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -13,177 +13,512 @@
         }
 
         body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #1a0033 0%, #2d004d 50%, #0d0020 100%);
-            color: #f0e6ff;
-            min-height: 100vh;
+            font-family: 'Georgia', serif;
             overflow-x: hidden;
+            background: #000;
         }
 
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
-
-        #container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+        /* 랜딩 페이지 */
+        .landing-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a0033 0%, #0a001a 50%, #1a0033 100%);
+            position: relative;
+            overflow: hidden;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
         }
 
-        header {
-            text-align: center;
-            padding: 40px 20px;
-            background: rgba(75, 0, 130, 0.3);
-            border-radius: 20px;
-            margin-bottom: 30px;
-            border: 2px solid rgba(138, 43, 226, 0.5);
+        .landing-page.hide {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
         }
 
-        h1 {
-            font-size: 3rem;
-            background: linear-gradient(45deg, #ff00ff, #00ffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-            text-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            color: #c8b3ff;
-        }
-
-        #questionSection {
-            background: rgba(50, 0, 80, 0.6);
-            padding: 40px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            border: 2px solid rgba(138, 43, 226, 0.3);
-        }
-
-        #question {
+        /* 별 배경 애니메이션 */
+        .stars {
+            position: absolute;
             width: 100%;
-            padding: 20px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .landing-content {
+            text-align: center;
+            z-index: 10;
+            padding: 2rem;
+        }
+
+        .landing-title {
+            font-size: 3.5rem;
+            color: #d4af37;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .landing-subtitle {
+            font-size: 1.3rem;
+            color: #b8a6d9;
+            margin-bottom: 3rem;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        .start-button {
+            padding: 1.2rem 3rem;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #d4af37 0%, #f2d06b 100%);
+            color: #1a0033;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
+            transition: all 0.3s ease;
+            animation: fadeInUp 1s ease-out 0.6s both;
+        }
+
+        .start-button:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.6);
+        }
+
+        .start-button:active {
+            transform: translateY(-1px) scale(1.02);
+        }
+
+        /* 질문 입력 페이지 */
+        .question-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2a1a4a 0%, #1a0f2e 50%, #2a1a4a 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(50px);
+            pointer-events: none;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            padding: 2rem;
+        }
+
+        .question-page.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .question-page.hide {
+            opacity: 0;
+            transform: translateY(-50px);
+            pointer-events: none;
+        }
+
+        .question-container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .question-title {
+            font-size: 2.5rem;
+            color: #d4af37;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .question-subtitle {
             font-size: 1.1rem;
-            background: rgba(30, 0, 50, 0.8);
-            border: 2px solid #8a2be2;
-            border-radius: 10px;
-            color: #f0e6ff;
+            color: #b8a6d9;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .question-input-wrapper {
+            position: relative;
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 1.5rem;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            color: #fff;
+            font-family: 'Georgia', serif;
+            transition: all 0.3s ease;
             resize: vertical;
             min-height: 120px;
         }
 
-        #question::placeholder {
-            color: #9370db;
+        .question-input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+            background: rgba(255, 255, 255, 0.08);
         }
 
-        .btn {
-            padding: 15px 40px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
+        .question-input::placeholder {
+            color: rgba(184, 166, 217, 0.5);
+        }
+
+        .char-counter {
+            position: absolute;
+            bottom: -25px;
+            right: 10px;
+            font-size: 0.9rem;
+            color: #b8a6d9;
+        }
+
+        .category-section {
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .category-label {
+            font-size: 1rem;
+            color: #b8a6d9;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .category-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            justify-content: center;
+        }
+
+        .category-btn {
+            padding: 0.8rem 1.5rem;
+            background: rgba(212, 175, 55, 0.1);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 25px;
+            color: #b8a6d9;
             cursor: pointer;
-            transition: all 0.3s;
-            margin: 10px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
         }
 
-        .btn-primary {
-            background: linear-gradient(45deg, #8a2be2, #da70d6);
-            color: white;
-            box-shadow: 0 5px 20px rgba(138, 43, 226, 0.4);
-        }
-
-        .btn-primary:hover:not(:disabled) {
+        .category-btn:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: rgba(212, 175, 55, 0.5);
             transform: translateY(-2px);
-            box-shadow: 0 7px 25px rgba(138, 43, 226, 0.6);
         }
 
-        .btn-primary:disabled {
+        .category-btn.selected {
+            background: linear-gradient(135deg, #d4af37 0%, #f2d06b 100%);
+            border-color: #d4af37;
+            color: #1a0033;
+            font-weight: bold;
+        }
+
+        .next-button {
+            padding: 1.2rem 3rem;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #d4af37 0%, #f2d06b 100%);
+            color: #1a0033;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.8s ease-out 0.8s both;
             opacity: 0.5;
-            cursor: not-allowed;
+            pointer-events: none;
         }
 
-        #canvasContainer {
-            position: relative;
+        .next-button.enabled {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .next-button.enabled:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.6);
+        }
+
+        .back-button {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            padding: 0.8rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 25px;
+            color: #b8a6d9;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* 카드 선택 페이지 */
+        .card-selection-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: linear-gradient(135deg, #0f0820 0%, #1a0033 50%, #0f0820 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 700px;
-            background: rgba(20, 0, 40, 0.6);
-            border-radius: 15px;
-            margin: 30px 0;
+            opacity: 0;
+            transform: scale(0.9);
+            pointer-events: none;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            padding: 0;
             overflow: hidden;
-            display: none;
-            border: 2px solid rgba(138, 43, 226, 0.3);
-            box-shadow: 0 0 30px rgba(138, 43, 226, 0.5);
         }
 
-        #canvas3d {
+        .card-selection-page.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: all;
+        }
+
+        .card-instruction {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+            z-index: 100;
+            position: relative;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .card-instruction h2 {
+            font-size: 2rem;
+            color: #d4af37;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .card-instruction p {
+            font-size: 1.1rem;
+            color: #b8a6d9;
+        }
+
+        .card-progress {
+            font-size: 1rem;
+            color: #d4af37;
+            margin-top: 0.5rem;
+        }
+
+        /* Three.js 캔버스 컨테이너 */
+        #canvas-container {
+            width: 100%;
+            flex: 1;
+            position: relative;
+            cursor: pointer;
+        }
+
+        #three-canvas {
             width: 100%;
             height: 100%;
+            display: block;
         }
 
-        #readingSection {
-            background: rgba(50, 0, 80, 0.6);
-            padding: 40px;
-            border-radius: 15px;
-            margin-top: 30px;
-            display: none;
-            border: 2px solid rgba(138, 43, 226, 0.3);
-        }
-
-        .card-info {
-            background: rgba(75, 0, 130, 0.4);
-            padding: 20px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border-left: 4px solid #da70d6;
-        }
-
-        .card-name {
+        /* 셔플 상태 메시지 */
+        .shuffle-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             font-size: 1.5rem;
-            font-weight: 700;
-            color: #ff00ff;
-            margin-bottom: 10px;
+            color: #d4af37;
+            text-shadow: 0 0 30px rgba(212, 175, 55, 0.8);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 50;
+            text-align: center;
+            padding: 0 2rem;
         }
 
-        .interpretation {
+        .shuffle-message.show {
+            opacity: 1;
+        }
+
+        /* 선택된 카드 표시 영역 */
+        .selected-cards-area {
+            display: flex;
+            gap: 3rem;
+            margin-top: 3rem;
+            min-height: 350px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .selected-card-slot {
+            width: 200px;
+            height: 320px;
+            border: 3px dashed rgba(212, 175, 55, 0.3);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .selected-card-slot.filled {
+            border-color: #d4af37;
+            border-style: solid;
+        }
+
+        .slot-label {
+            position: absolute;
+            bottom: -40px;
+            font-size: 1rem;
+            color: #b8a6d9;
+            text-align: center;
+        }
+
+        .selected-card-display {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            position: absolute;
+            transform-style: preserve-3d;
+            transition: transform 0.8s ease;
+        }
+
+        .selected-card-display.flipping {
+            animation: flipCard 1s ease-out forwards;
+        }
+
+        @keyframes flipCard {
+            0% {
+                transform: rotateY(0deg);
+            }
+            50% {
+                transform: rotateY(90deg) scale(1.1);
+            }
+            100% {
+                transform: rotateY(180deg);
+            }
+        }
+
+        .card-front {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%);
+            border: 3px solid #d4af37;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            position: absolute;
+            backface-visibility: hidden;
+            transform: rotateY(180deg);
+        }
+
+        .card-front h3 {
+            font-size: 1.3rem;
+            color: #2a1a4a;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-front .card-image {
+            font-size: 5rem;
+            margin: 1rem 0;
+        }
+
+        /* 완료 버튼 */
+        .view-result-button {
+            padding: 1.2rem 3rem;
             font-size: 1.1rem;
-            line-height: 1.8;
-            color: #e6d5ff;
+            background: linear-gradient(135deg, #d4af37 0%, #f2d06b 100%);
+            color: #1a0033;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
+            transition: all 0.3s ease;
+            margin-top: 3rem;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .highlight {
-            background: rgba(138, 43, 226, 0.3);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            color: #ffd700;
+        .view-result-button.show {
+            opacity: 1;
+            pointer-events: all;
+            animation: pulse 2s infinite;
         }
 
-        #cooldownMessage {
-            text-align: center;
-            padding: 20px;
-            background: rgba(255, 100, 100, 0.2);
-            border-radius: 10px;
-            color: #ffaaaa;
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .view-result-button:hover {
+            transform: translateY(-3px) scale(1.08);
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.6);
+        }
+
+        /* 로딩 화면 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
             display: none;
-            border: 2px solid rgba(255, 100, 100, 0.4);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            flex-direction: column;
         }
 
-        .loading {
-            text-align: center;
-            padding: 40px;
-            font-size: 1.2rem;
-            color: #c8b3ff;
+        .loading-overlay.active {
+            display: flex;
         }
 
-        .spinner {
-            border: 4px solid rgba(138, 43, 226, 0.3);
-            border-top: 4px solid #da70d6;
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(212, 175, 55, 0.3);
+            border-top: 4px solid #d4af37;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
         }
 
         @keyframes spin {
@@ -191,73 +526,813 @@
             100% { transform: rotate(360deg); }
         }
 
-        footer {
+        .loading-text {
+            margin-top: 2rem;
+            font-size: 1.3rem;
+            color: #d4af37;
             text-align: center;
-            padding: 30px;
-            margin-top: 50px;
-            color: #9370db;
-            border-top: 2px solid rgba(138, 43, 226, 0.3);
         }
 
+        /* 결과 페이지 */
+        .result-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #1a0033 0%, #2d004d 50%, #0d0020 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(50px);
+            pointer-events: none;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .result-page.active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .result-container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .result-title {
+            font-size: 2.5rem;
+            color: #d4af37;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+        }
+
+        .interpretation-text {
+            background: rgba(50, 0, 80, 0.6);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            color: #e6d5ff;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            margin-bottom: 2rem;
+        }
+
+        /* 애니메이션 */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 반응형 */
         @media (max-width: 768px) {
-            h1 {
+            .landing-title {
+                font-size: 2.5rem;
+            }
+
+            .landing-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .question-title {
                 font-size: 2rem;
             }
 
-            #questionSection,
-            #readingSection {
-                padding: 20px;
+            .tarot-card {
+                width: 140px;
+                height: 220px;
             }
 
-            #canvasContainer {
-                height: 300px;
+            .cards-container {
+                gap: 1rem;
+            }
+
+            .selected-cards-area {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .selected-card-slot {
+                width: 160px;
+                height: 260px;
+            }
+
+            .back-button {
+                top: 1rem;
+                left: 1rem;
+                padding: 0.6rem 1.2rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* 파티클 효과 */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #d4af37;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFloat 2s ease-out forwards;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(0);
             }
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <header>
-            <h1>🔮 신비로운 타로 🔮</h1>
-            <p class="subtitle">AI가 당신의 운명을 읽어드립니다</p>
-        </header>
-
-        <div id="questionSection">
-            <h2 style="margin-bottom: 20px;">무엇이 궁금하신가요?</h2>
-            <textarea id="question" placeholder="타로에 물어보고 싶은 질문을 입력하세요...&#10;예: 새로운 프로젝트를 시작해야 할까요?"></textarea>
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-primary" id="drawButton" onclick="startReading()">
-                    🎴 카드 뽑기
-                </button>
-            </div>
+    <!-- 랜딩 페이지 -->
+    <div class="landing-page" id="landingPage">
+        <div class="stars" id="stars"></div>
+        <div class="landing-content">
+            <h1 class="landing-title">✨ 신비로운 타로 리딩 ✨</h1>
+            <p class="landing-subtitle">당신의 질문에 우주가 답합니다</p>
+            <button class="start-button" onclick="startReading()">무료 타로 시작하기</button>
         </div>
-
-        <div id="cooldownMessage">
-            ⏱️ 다음 리딩까지 <span id="cooldownTimer">20</span>초 남았습니다.
-        </div>
-
-        <div id="canvasContainer">
-            <canvas id="canvas3d"></canvas>
-        </div>
-
-        <div id="readingSection">
-            <h2 style="margin-bottom: 20px;">🌟 타로 리딩 결과</h2>
-            <div id="cardsResult"></div>
-            <div id="interpretation" class="interpretation"></div>
-            <div style="text-align: center; margin-top: 30px;">
-                <button class="btn btn-primary" onclick="resetReading()">
-                    🔄 다시 보기
-                </button>
-            </div>
-        </div>
-
-        <footer>
-            <p>✨ 타로는 당신의 내면을 비추는 거울입니다 ✨</p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">첫 1회 무료 | 이후 20초마다 이용 가능</p>
-        </footer>
     </div>
 
-    <script src="tarot-cards.js"></script>
-    <script src="tarot-app.js"></script>
+    <!-- 질문 입력 페이지 -->
+    <div class="question-page" id="questionPage">
+        <button class="back-button" onclick="goToLanding()">← 돌아가기</button>
+
+        <div class="question-container">
+            <h2 class="question-title">마음속 질문을 들려주세요</h2>
+            <p class="question-subtitle">
+                타로는 당신의 진심을 읽습니다.<br>
+                궁금한 것이 있다면 솔직하게 물어보세요.
+            </p>
+
+            <div class="question-input-wrapper">
+                <textarea
+                    class="question-input"
+                    id="questionInput"
+                    placeholder="예시: 나의 앞으로의 진로는 어떻게 될까요?
+
+곧 시작할 새로운 프로젝트가 성공할 수 있을까요?
+
+현재 내가 집중해야 할 것은 무엇인가요?"
+                    maxlength="200"
+                    oninput="updateCharCount()"
+                ></textarea>
+                <span class="char-counter" id="charCounter">0 / 200</span>
+            </div>
+
+            <div class="category-section">
+                <label class="category-label">질문의 주제를 선택해주세요 (선택사항)</label>
+                <div class="category-buttons">
+                    <button class="category-btn" onclick="selectCategory(this, 'daily')">일일 운세</button>
+                    <button class="category-btn" onclick="selectCategory(this, 'love')">사랑운</button>
+                    <button class="category-btn" onclick="selectCategory(this, 'career')">진로/직업운</button>
+                    <button class="category-btn" onclick="selectCategory(this, 'wealth')">재물운</button>
+                    <button class="category-btn" onclick="selectCategory(this, 'general')">일반 상담</button>
+                </div>
+            </div>
+
+            <button class="next-button" id="nextButton" onclick="goToCardSelection()">
+                카드 선택하기 →
+            </button>
+        </div>
+    </div>
+
+    <!-- 카드 선택 페이지 -->
+    <div class="card-selection-page" id="cardSelectionPage">
+        <button class="back-button" onclick="goToQuestion()">← 돌아가기</button>
+
+        <div class="card-instruction">
+            <h2>마음이 이끄는 카드를 선택하세요</h2>
+            <p id="instructionText">카드 덱을 클릭하여 섞어주세요</p>
+            <div class="card-progress" id="cardProgress">0 / 3 선택됨</div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="three-canvas"></canvas>
+            <div class="shuffle-message" id="shuffleMessage">카드를 섞는 중...</div>
+        </div>
+
+        <div class="selected-cards-area" id="selectedCardsArea">
+            <div class="selected-card-slot" id="slot1">
+                <span class="slot-label">과거</span>
+            </div>
+            <div class="selected-card-slot" id="slot2">
+                <span class="slot-label">현재</span>
+            </div>
+            <div class="selected-card-slot" id="slot3">
+                <span class="slot-label">미래</span>
+            </div>
+        </div>
+
+        <button class="view-result-button" id="viewResultButton" onclick="viewResult()">
+            해석 보기 ✨
+        </button>
+    </div>
+
+    <!-- 로딩 화면 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">타로 카드를 해석하는 중입니다...<br>잠시만 기다려주세요 ✨</div>
+    </div>
+
+    <!-- 결과 페이지 -->
+    <div class="result-page" id="resultPage">
+        <button class="back-button" onclick="resetReading()">← 처음으로</button>
+
+        <div class="result-container">
+            <h2 class="result-title">🌟 타로 리딩 결과</h2>
+            <div class="interpretation-text" id="interpretationText"></div>
+            <div style="text-align: center;">
+                <button class="start-button" onclick="resetReading()">처음으로 돌아가기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 별 생성
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = Math.random() * 3 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        createStars();
+
+        // 페이지 전환
+        function startReading() {
+            document.getElementById('landingPage').classList.add('hide');
+            setTimeout(() => {
+                document.getElementById('questionPage').classList.add('active');
+            }, 400);
+        }
+
+        function goToLanding() {
+            document.getElementById('questionPage').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('landingPage').classList.remove('hide');
+            }, 400);
+        }
+
+        function goToQuestion() {
+            document.getElementById('cardSelectionPage').classList.remove('active');
+            if (threeScene) {
+                threeScene.dispose();
+            }
+            setTimeout(() => {
+                document.getElementById('questionPage').classList.add('active');
+                selectedCount = 0;
+                selectedCards = [];
+                document.getElementById('cardProgress').textContent = '0 / 3 선택됨';
+                document.getElementById('viewResultButton').classList.remove('show');
+            }, 400);
+        }
+
+        function resetReading() {
+            document.getElementById('resultPage').classList.remove('active');
+            document.getElementById('cardSelectionPage').classList.remove('active');
+            document.getElementById('questionPage').classList.remove('active');
+
+            if (threeScene) {
+                threeScene.dispose();
+                threeScene = null;
+            }
+
+            selectedCount = 0;
+            selectedCards = [];
+            selectedCategory = null;
+
+            document.getElementById('questionInput').value = '';
+            document.getElementById('charCounter').textContent = '0 / 200';
+            document.getElementById('nextButton').classList.remove('enabled');
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('selected'));
+
+            setTimeout(() => {
+                document.getElementById('landingPage').classList.remove('hide');
+            }, 400);
+        }
+
+        // 글자 수 카운터
+        function updateCharCount() {
+            const input = document.getElementById('questionInput');
+            const counter = document.getElementById('charCounter');
+            const nextButton = document.getElementById('nextButton');
+
+            counter.textContent = input.value.length + ' / 200';
+
+            if (input.value.trim().length >= 10) {
+                nextButton.classList.add('enabled');
+            } else {
+                nextButton.classList.remove('enabled');
+            }
+        }
+
+        // 카테고리 선택
+        let selectedCategory = null;
+        function selectCategory(button, category) {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            button.classList.add('selected');
+            selectedCategory = category;
+        }
+
+        // 카드 선택 페이지로 이동
+        function goToCardSelection() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (question.length < 10) {
+                alert('질문을 최소 10자 이상 입력해주세요.');
+                return;
+            }
+
+            document.getElementById('questionPage').classList.add('hide');
+            setTimeout(() => {
+                document.getElementById('cardSelectionPage').classList.add('active');
+                initThreeScene();
+            }, 400);
+        }
+
+        // 타로 카드 데이터
+        const tarotCards = [
+            { name: 'The Fool', koreanName: '바보', symbol: '🃏', meaning: '새로운 시작과 순수한 가능성' },
+            { name: 'The Magician', koreanName: '마법사', symbol: '🎩', meaning: '창조력과 의지의 힘' },
+            { name: 'The High Priestess', koreanName: '여사제', symbol: '🌙', meaning: '직관과 내면의 지혜' },
+            { name: 'The Empress', koreanName: '여제', symbol: '👑', meaning: '풍요와 창조성' },
+            { name: 'The Emperor', koreanName: '황제', symbol: '⚔️', meaning: '권위와 안정성' },
+            { name: 'The Hierophant', koreanName: '교황', symbol: '📿', meaning: '전통과 영적 지도' },
+            { name: 'The Lovers', koreanName: '연인', symbol: '💕', meaning: '사랑과 선택' },
+            { name: 'The Chariot', koreanName: '전차', symbol: '🏇', meaning: '의지와 승리' },
+            { name: 'Strength', koreanName: '힘', symbol: '🦁', meaning: '용기와 내적 힘' },
+            { name: 'The Hermit', koreanName: '은둔자', symbol: '🕯️', meaning: '성찰과 내면의 탐구' },
+            { name: 'Wheel of Fortune', koreanName: '운명의 수레바퀴', symbol: '☸️', meaning: '운명의 전환점' },
+            { name: 'Justice', koreanName: '정의', symbol: '⚖️', meaning: '균형과 공정함' },
+            { name: 'The Hanged Man', koreanName: '매달린 남자', symbol: '🙃', meaning: '새로운 관점과 희생' },
+            { name: 'Death', koreanName: '죽음', symbol: '💀', meaning: '변화와 새로운 시작' },
+            { name: 'Temperance', koreanName: '절제', symbol: '🍷', meaning: '조화와 균형' },
+            { name: 'The Devil', koreanName: '악마', symbol: '👿', meaning: '속박과 해방' },
+            { name: 'The Tower', koreanName: '탑', symbol: '🗼', meaning: '갑작스러운 변화' },
+            { name: 'The Star', koreanName: '별', symbol: '⭐', meaning: '희망과 영감' },
+            { name: 'The Moon', koreanName: '달', symbol: '🌙', meaning: '직관과 무의식' },
+            { name: 'The Sun', koreanName: '태양', symbol: '☀️', meaning: '성공과 기쁨' },
+            { name: 'Judgement', koreanName: '심판', symbol: '📯', meaning: '각성과 재생' },
+            { name: 'The World', koreanName: '세계', symbol: '🌍', meaning: '완성과 성취' },
+        ];
+
+        // Three.js 씬 관리
+        let threeScene = null;
+
+        // 카드 선택 로직
+        let selectedCount = 0;
+        let selectedCards = [];
+        const slotLabels = ['과거', '현재', '미래'];
+
+        // Three.js 씬 초기화
+        function initThreeScene() {
+            const container = document.getElementById('canvas-container');
+            const canvas = document.getElementById('three-canvas');
+
+            threeScene = new TarotCardScene(canvas, container);
+            threeScene.init();
+        }
+
+        // Three.js 타로 카드 씬 클래스
+        class TarotCardScene {
+            constructor(canvas, container) {
+                this.canvas = canvas;
+                this.container = container;
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.cards = [];
+                this.animationId = null;
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                this.state = 'initial'; // initial, shuffling, spread, selecting
+                this.hoveredCard = null;
+                this.selectedCardIndices = [];
+            }
+
+            init() {
+                // 씬 설정
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0f0820);
+
+                // 카메라 설정
+                const aspect = this.container.clientWidth / this.container.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+                this.camera.position.set(0, 5, 15);
+                this.camera.lookAt(0, 0, 0);
+
+                // 렌더러 설정
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: this.canvas,
+                    antialias: true,
+                    alpha: true
+                });
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.renderer.shadowMap.enabled = true;
+
+                // 조명 설정
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                this.scene.add(ambientLight);
+
+                const spotLight = new THREE.SpotLight(0xd4af37, 1);
+                spotLight.position.set(0, 20, 10);
+                spotLight.castShadow = true;
+                this.scene.add(spotLight);
+
+                const pointLight1 = new THREE.PointLight(0xd4af37, 0.5);
+                pointLight1.position.set(-10, 5, 5);
+                this.scene.add(pointLight1);
+
+                const pointLight2 = new THREE.PointLight(0x9370db, 0.5);
+                pointLight2.position.set(10, 5, 5);
+                this.scene.add(pointLight2);
+
+                // 카드 덱 생성
+                this.createCardDeck();
+
+                // 이벤트 리스너
+                this.canvas.addEventListener('click', (e) => this.onCanvasClick(e));
+                this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                window.addEventListener('resize', () => this.onWindowResize());
+
+                // 애니메이션 시작
+                this.animate();
+            }
+
+            createCardDeck() {
+                const cardWidth = 2;
+                const cardHeight = 3;
+                const cardDepth = 0.05;
+
+                // 22장의 카드 생성 (초기에는 덱으로 쌓여있음)
+                for (let i = 0; i < 22; i++) {
+                    const cardGeometry = new THREE.BoxGeometry(cardWidth, cardHeight, cardDepth);
+
+                    // 카드 뒷면 재질 (보라/금색 그라데이션)
+                    const backMaterial = new THREE.MeshPhongMaterial({
+                        color: 0x2a1a4a,
+                        emissive: 0xd4af37,
+                        emissiveIntensity: 0.2,
+                        shininess: 100
+                    });
+
+                    // 카드 앞면 재질
+                    const frontMaterial = new THREE.MeshPhongMaterial({
+                        color: 0xf5f5f5,
+                        emissive: 0xd4af37,
+                        emissiveIntensity: 0.1
+                    });
+
+                    // 카드 옆면 재질
+                    const sideMaterial = new THREE.MeshPhongMaterial({
+                        color: 0xd4af37,
+                        emissive: 0xd4af37,
+                        emissiveIntensity: 0.3
+                    });
+
+                    const materials = [
+                        sideMaterial, // right
+                        sideMaterial, // left
+                        sideMaterial, // top
+                        sideMaterial, // bottom
+                        frontMaterial, // front
+                        backMaterial  // back
+                    ];
+
+                    const card = new THREE.Mesh(cardGeometry, materials);
+                    card.position.set(0, i * 0.02, 0); // 덱으로 쌓기
+                    card.rotation.set(0, 0, 0);
+                    card.castShadow = true;
+                    card.receiveShadow = true;
+                    card.userData = {
+                        index: i,
+                        originalPosition: new THREE.Vector3(0, i * 0.02, 0),
+                        targetPosition: new THREE.Vector3(0, i * 0.02, 0),
+                        originalRotation: new THREE.Euler(0, 0, 0),
+                        targetRotation: new THREE.Euler(0, 0, 0),
+                        data: tarotCards[i % tarotCards.length],
+                        isSelected: false
+                    };
+
+                    this.cards.push(card);
+                    this.scene.add(card);
+                }
+
+                this.state = 'initial';
+            }
+
+            onCanvasClick(event) {
+                if (this.state === 'initial') {
+                    // 첫 클릭: 카드 섞기
+                    this.shuffleCards();
+                } else if (this.state === 'spread') {
+                    // 카드 선택
+                    this.selectCard(event);
+                }
+            }
+
+            onMouseMove(event) {
+                if (this.state !== 'spread') return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.cards);
+
+                // 호버 효과
+                if (this.hoveredCard) {
+                    this.hoveredCard.position.y = this.hoveredCard.userData.targetPosition.y;
+                    this.hoveredCard = null;
+                }
+
+                if (intersects.length > 0) {
+                    const card = intersects[0].object;
+                    if (!card.userData.isSelected) {
+                        this.hoveredCard = card;
+                        card.position.y = card.userData.targetPosition.y + 0.5;
+                    }
+                }
+            }
+
+            shuffleCards() {
+                this.state = 'shuffling';
+                document.getElementById('shuffleMessage').classList.add('show');
+                document.getElementById('instructionText').textContent = '카드를 섞는 중...';
+
+                // 카드 섞기 애니메이션
+                this.cards.forEach((card, i) => {
+                    const angle = (Math.PI * 2 * Math.random());
+                    const radius = 5 + Math.random() * 3;
+
+                    setTimeout(() => {
+                        card.userData.targetPosition.set(
+                            Math.cos(angle) * radius,
+                            Math.random() * 2 - 1,
+                            Math.sin(angle) * radius
+                        );
+                        card.userData.targetRotation.set(
+                            Math.random() * Math.PI,
+                            Math.random() * Math.PI * 2,
+                            Math.random() * Math.PI
+                        );
+                    }, i * 50);
+                });
+
+                // 2초 후 카드 펼치기
+                setTimeout(() => {
+                    this.spreadCards();
+                }, 2000);
+            }
+
+            spreadCards() {
+                document.getElementById('shuffleMessage').classList.remove('show');
+                document.getElementById('instructionText').textContent = '직관을 믿고 카드를 선택하세요';
+
+                // 카드를 부채꼴로 펼치기
+                const totalCards = this.cards.length;
+                const spreadAngle = Math.PI * 0.8; // 144도
+                const radius = 8;
+
+                this.cards.forEach((card, i) => {
+                    const angle = -spreadAngle / 2 + (spreadAngle / (totalCards - 1)) * i;
+
+                    setTimeout(() => {
+                        card.userData.targetPosition.set(
+                            Math.sin(angle) * radius,
+                            0,
+                            Math.cos(angle) * radius - 3
+                        );
+                        card.userData.targetRotation.set(
+                            0,
+                            -angle,
+                            0
+                        );
+                    }, i * 50);
+                });
+
+                setTimeout(() => {
+                    this.state = 'spread';
+                }, totalCards * 50 + 500);
+            }
+
+            selectCard(event) {
+                const rect = this.canvas.getBoundingClientRect();
+                this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+                this.raycaster.setFromCamera(this.mouse, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.cards);
+
+                if (intersects.length > 0 && selectedCount < 3) {
+                    const card = intersects[0].object;
+
+                    if (!card.userData.isSelected) {
+                        card.userData.isSelected = true;
+                        selectedCount++;
+                        selectedCards.push(card.userData.data);
+
+                        // 선택된 카드 애니메이션
+                        const slotPositions = [
+                            { x: -4, y: -3, z: 5 },
+                            { x: 0, y: -3, z: 5 },
+                            { x: 4, y: -3, z: 5 }
+                        ];
+
+                        const targetPos = slotPositions[selectedCount - 1];
+                        card.userData.targetPosition.set(targetPos.x, targetPos.y, targetPos.z);
+                        card.userData.targetRotation.set(0, 0, 0);
+
+                        // UI 업데이트
+                        document.getElementById('cardProgress').textContent = `${selectedCount} / 3 선택됨`;
+                        displaySelectedCard(selectedCount, card.userData.data);
+
+                        // 나머지 카드 숨기기 (선택되지 않은 카드)
+                        if (selectedCount < 3) {
+                            this.cards.forEach(c => {
+                                if (!c.userData.isSelected) {
+                                    c.userData.targetPosition.y = -5; // 아래로 이동
+                                }
+                            });
+                            setTimeout(() => {
+                                this.cards.forEach(c => {
+                                    if (!c.userData.isSelected) {
+                                        c.userData.targetPosition.y = 0;
+                                    }
+                                });
+                            }, 500);
+                        }
+
+                        // 3장 모두 선택 완료
+                        if (selectedCount === 3) {
+                            setTimeout(() => {
+                                document.getElementById('viewResultButton').classList.add('show');
+                                this.state = 'completed';
+
+                                // 선택되지 않은 카드 제거
+                                this.cards.forEach(c => {
+                                    if (!c.userData.isSelected) {
+                                        c.userData.targetPosition.y = -10;
+                                    }
+                                });
+                            }, 1000);
+                        }
+                    }
+                }
+            }
+
+            animate() {
+                this.animationId = requestAnimationFrame(() => this.animate());
+
+                // 카드 위치/회전 부드럽게 이동
+                this.cards.forEach(card => {
+                    card.position.lerp(card.userData.targetPosition, 0.1);
+                    card.rotation.x += (card.userData.targetRotation.x - card.rotation.x) * 0.1;
+                    card.rotation.y += (card.userData.targetRotation.y - card.rotation.y) * 0.1;
+                    card.rotation.z += (card.userData.targetRotation.z - card.rotation.z) * 0.1;
+                });
+
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            onWindowResize() {
+                const aspect = this.container.clientWidth / this.container.clientHeight;
+                this.camera.aspect = aspect;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+            }
+
+            dispose() {
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                this.cards.forEach(card => {
+                    card.geometry.dispose();
+                    if (Array.isArray(card.material)) {
+                        card.material.forEach(mat => mat.dispose());
+                    } else {
+                        card.material.dispose();
+                    }
+                    this.scene.remove(card);
+                });
+                this.renderer.dispose();
+            }
+        }
+
+        // 선택된 카드 표시
+        function displaySelectedCard(slotNumber, cardData) {
+            const slot = document.getElementById('slot' + slotNumber);
+            slot.classList.add('filled');
+
+            const cardDisplay = document.createElement('div');
+            cardDisplay.className = 'selected-card-display';
+            cardDisplay.innerHTML = `
+                <div class="card-back">
+                    <div class="card-symbol">✨</div>
+                </div>
+                <div class="card-front">
+                    <h3>${cardData.koreanName}</h3>
+                    <div class="card-image">${cardData.symbol}</div>
+                    <p style="font-size: 0.9rem; color: #666; text-align: center;">${cardData.meaning}</p>
+                </div>
+            `;
+
+            slot.appendChild(cardDisplay);
+
+            // 카드 뒤집기 애니메이션
+            setTimeout(() => {
+                cardDisplay.classList.add('flipping');
+            }, 500);
+        }
+
+        // 결과 보기 (API 호출)
+        async function viewResult() {
+            const question = document.getElementById('questionInput').value.trim();
+            const cardNames = selectedCards.map(card => card.koreanName);
+
+            // 로딩 화면 표시
+            document.getElementById('loadingOverlay').classList.add('active');
+
+            try {
+                // API 호출
+                const response = await fetch('https://tarot.api.arrr.at/input', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question,
+                        cards: cardNames,
+                        category: selectedCategory || 'general'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('API 호출 실패');
+                }
+
+                const data = await response.json();
+
+                // 로딩 화면 숨기기
+                document.getElementById('loadingOverlay').classList.remove('active');
+
+                // 결과 표시
+                document.getElementById('interpretationText').textContent = data.interpretation || data.result || '해석 결과를 불러올 수 없습니다.';
+
+                // 카드 선택 페이지 숨기고 결과 페이지 표시
+                document.getElementById('cardSelectionPage').classList.remove('active');
+                setTimeout(() => {
+                    document.getElementById('resultPage').classList.add('active');
+                }, 400);
+
+            } catch (error) {
+                console.error('API 호출 오류:', error);
+
+                // 로딩 화면 숨기기
+                document.getElementById('loadingOverlay').classList.remove('active');
+
+                // 오류 메시지 표시
+                alert('타로 해석을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
+            }
+        }
+    </script>
 </body>
 </html>
