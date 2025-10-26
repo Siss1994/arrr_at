@@ -305,7 +305,9 @@
             pointer-events: none;
             transition: opacity 0.8s ease-out, transform 0.8s ease-out;
             padding: 0;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .card-selection-page.active {
@@ -898,28 +900,28 @@
 
         // 타로 카드 데이터
         const tarotCards = [
-            { name: 'The Fool', koreanName: '바보', symbol: '🃏', meaning: '새로운 시작과 순수한 가능성' },
-            { name: 'The Magician', koreanName: '마법사', symbol: '🎩', meaning: '창조력과 의지의 힘' },
-            { name: 'The High Priestess', koreanName: '여사제', symbol: '🌙', meaning: '직관과 내면의 지혜' },
-            { name: 'The Empress', koreanName: '여제', symbol: '👑', meaning: '풍요와 창조성' },
-            { name: 'The Emperor', koreanName: '황제', symbol: '⚔️', meaning: '권위와 안정성' },
-            { name: 'The Hierophant', koreanName: '교황', symbol: '📿', meaning: '전통과 영적 지도' },
-            { name: 'The Lovers', koreanName: '연인', symbol: '💕', meaning: '사랑과 선택' },
-            { name: 'The Chariot', koreanName: '전차', symbol: '🏇', meaning: '의지와 승리' },
-            { name: 'Strength', koreanName: '힘', symbol: '🦁', meaning: '용기와 내적 힘' },
-            { name: 'The Hermit', koreanName: '은둔자', symbol: '🕯️', meaning: '성찰과 내면의 탐구' },
-            { name: 'Wheel of Fortune', koreanName: '운명의 수레바퀴', symbol: '☸️', meaning: '운명의 전환점' },
-            { name: 'Justice', koreanName: '정의', symbol: '⚖️', meaning: '균형과 공정함' },
-            { name: 'The Hanged Man', koreanName: '매달린 남자', symbol: '🙃', meaning: '새로운 관점과 희생' },
-            { name: 'Death', koreanName: '죽음', symbol: '💀', meaning: '변화와 새로운 시작' },
-            { name: 'Temperance', koreanName: '절제', symbol: '🍷', meaning: '조화와 균형' },
-            { name: 'The Devil', koreanName: '악마', symbol: '👿', meaning: '속박과 해방' },
-            { name: 'The Tower', koreanName: '탑', symbol: '🗼', meaning: '갑작스러운 변화' },
-            { name: 'The Star', koreanName: '별', symbol: '⭐', meaning: '희망과 영감' },
-            { name: 'The Moon', koreanName: '달', symbol: '🌙', meaning: '직관과 무의식' },
-            { name: 'The Sun', koreanName: '태양', symbol: '☀️', meaning: '성공과 기쁨' },
-            { name: 'Judgement', koreanName: '심판', symbol: '📯', meaning: '각성과 재생' },
-            { name: 'The World', koreanName: '세계', symbol: '🌍', meaning: '완성과 성취' },
+            { name: 'The Fool', koreanName: '바보', symbol: '🃏', meaning: '새로운 시작과 순수한 가능성', image: 'cards/00_the_fool.png' },
+            { name: 'The Magician', koreanName: '마법사', symbol: '🎩', meaning: '창조력과 의지의 힘', image: 'cards/01_the_magician.png' },
+            { name: 'The High Priestess', koreanName: '여사제', symbol: '🌙', meaning: '직관과 내면의 지혜', image: 'cards/02_the_high_priestess.png' },
+            { name: 'The Empress', koreanName: '여제', symbol: '👑', meaning: '풍요와 창조성', image: 'cards/03_the_empress.png' },
+            { name: 'The Emperor', koreanName: '황제', symbol: '⚔️', meaning: '권위와 안정성', image: 'cards/04_the_emperor.png' },
+            { name: 'The Hierophant', koreanName: '교황', symbol: '📿', meaning: '전통과 영적 지도', image: 'cards/05_the_hierophant.png' },
+            { name: 'The Lovers', koreanName: '연인', symbol: '💕', meaning: '사랑과 선택', image: 'cards/06_the_lovers.png' },
+            { name: 'The Chariot', koreanName: '전차', symbol: '🏇', meaning: '의지와 승리', image: 'cards/07_the_chariot.png' },
+            { name: 'Strength', koreanName: '힘', symbol: '🦁', meaning: '용기와 내적 힘', image: 'cards/08_strength.png' },
+            { name: 'The Hermit', koreanName: '은둔자', symbol: '🕯️', meaning: '성찰과 내면의 탐구', image: 'cards/09_the_hermit.png' },
+            { name: 'Wheel of Fortune', koreanName: '운명의 수레바퀴', symbol: '☸️', meaning: '운명의 전환점', image: 'cards/10_wheel_of_fortune.png' },
+            { name: 'Justice', koreanName: '정의', symbol: '⚖️', meaning: '균형과 공정함', image: 'cards/11_justice.png' },
+            { name: 'The Hanged Man', koreanName: '매달린 남자', symbol: '🙃', meaning: '새로운 관점과 희생', image: 'cards/12_the_hanged_man.png' },
+            { name: 'Death', koreanName: '죽음', symbol: '💀', meaning: '변화와 새로운 시작', image: 'cards/13_death.png' },
+            { name: 'Temperance', koreanName: '절제', symbol: '🍷', meaning: '조화와 균형', image: 'cards/14_temperance.png' },
+            { name: 'The Devil', koreanName: '악마', symbol: '👿', meaning: '속박과 해방', image: 'cards/15_the_devil.png' },
+            { name: 'The Tower', koreanName: '탑', symbol: '🗼', meaning: '갑작스러운 변화', image: 'cards/16_the_tower.png' },
+            { name: 'The Star', koreanName: '별', symbol: '⭐', meaning: '희망과 영감', image: 'cards/17_the_star.png' },
+            { name: 'The Moon', koreanName: '달', symbol: '🌙', meaning: '직관과 무의식', image: 'cards/18_the_moon.png' },
+            { name: 'The Sun', koreanName: '태양', symbol: '☀️', meaning: '성공과 기쁨', image: 'cards/19_the_sun.png' },
+            { name: 'Judgement', koreanName: '심판', symbol: '📯', meaning: '각성과 재생', image: 'cards/20_judgement.png' },
+            { name: 'The World', koreanName: '세계', symbol: '🌍', meaning: '완성과 성취', image: 'cards/21_the_world.png' },
         ];
 
         // Three.js 씬 관리
@@ -1010,10 +1012,15 @@
                 const cardWidth = 2;
                 const cardHeight = 3;
                 const cardDepth = 0.05;
+                const textureLoader = new THREE.TextureLoader();
 
                 // 22장의 카드 생성 (초기에는 덱으로 쌓여있음)
                 for (let i = 0; i < 22; i++) {
                     const cardGeometry = new THREE.BoxGeometry(cardWidth, cardHeight, cardDepth);
+                    const cardData = tarotCards[i % tarotCards.length];
+
+                    // 카드 앞면 텍스처 로드
+                    const frontTexture = textureLoader.load(cardData.image);
 
                     // 카드 뒷면 재질 (보라/금색 그라데이션)
                     const backMaterial = new THREE.MeshPhongMaterial({
@@ -1023,10 +1030,10 @@
                         shininess: 100
                     });
 
-                    // 카드 앞면 재질
+                    // 카드 앞면 재질 (이미지 텍스처)
                     const frontMaterial = new THREE.MeshPhongMaterial({
-                        color: 0xf5f5f5,
-                        emissive: 0xd4af37,
+                        map: frontTexture,
+                        emissive: 0x111111,
                         emissiveIntensity: 0.1
                     });
 
@@ -1048,16 +1055,16 @@
 
                     const card = new THREE.Mesh(cardGeometry, materials);
                     card.position.set(0, i * 0.02, 0); // 덱으로 쌓기
-                    card.rotation.set(0, 0, 0);
+                    card.rotation.set(0, Math.PI, 0); // 뒷면이 보이도록 회전
                     card.castShadow = true;
                     card.receiveShadow = true;
                     card.userData = {
                         index: i,
                         originalPosition: new THREE.Vector3(0, i * 0.02, 0),
                         targetPosition: new THREE.Vector3(0, i * 0.02, 0),
-                        originalRotation: new THREE.Euler(0, 0, 0),
-                        targetRotation: new THREE.Euler(0, 0, 0),
-                        data: tarotCards[i % tarotCards.length],
+                        originalRotation: new THREE.Euler(0, Math.PI, 0),
+                        targetRotation: new THREE.Euler(0, Math.PI, 0),
+                        data: cardData,
                         isSelected: false
                     };
 
@@ -1275,13 +1282,11 @@
             const cardDisplay = document.createElement('div');
             cardDisplay.className = 'selected-card-display';
             cardDisplay.innerHTML = `
-                <div class="card-back">
-                    <div class="card-symbol">✨</div>
+                <div class="card-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; background: linear-gradient(135deg, #2a1a4a 0%, #1a0033 100%); border: 3px solid #d4af37; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+                    ✨
                 </div>
-                <div class="card-front">
-                    <h3>${cardData.koreanName}</h3>
-                    <div class="card-image">${cardData.symbol}</div>
-                    <p style="font-size: 0.9rem; color: #666; text-align: center;">${cardData.meaning}</p>
+                <div class="card-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+                    <img src="${cardData.image}" alt="${cardData.koreanName}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 15px;">
                 </div>
             `;
 
