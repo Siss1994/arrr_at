@@ -256,11 +256,14 @@
             pointer-events: none;
             -webkit-appearance: none;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            z-index: 100;
         }
 
         .next-button.enabled {
             opacity: 1;
             pointer-events: all;
+            cursor: pointer;
         }
 
         .next-button.enabled:hover {
@@ -757,7 +760,7 @@
                 </div>
             </div>
 
-            <button class="next-button" id="nextButton" onclick="goToCardSelection()">
+            <button class="next-button" id="nextButton" onclick="goToCardSelection()" ontouchend="goToCardSelection()">
                 카드 선택하기 →
             </button>
         </div>
@@ -895,8 +898,12 @@
 
             if (input.value.trim().length >= 10) {
                 nextButton.classList.add('enabled');
+                nextButton.style.pointerEvents = 'all';
+                nextButton.style.cursor = 'pointer';
             } else {
                 nextButton.classList.remove('enabled');
+                nextButton.style.pointerEvents = 'none';
+                nextButton.style.cursor = 'default';
             }
         }
 
@@ -911,7 +918,18 @@
         }
 
         // 카드 선택 페이지로 이동
-        function goToCardSelection() {
+        function goToCardSelection(event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            const nextButton = document.getElementById('nextButton');
+            if (!nextButton.classList.contains('enabled')) {
+                alert('질문을 최소 10자 이상 입력해주세요.');
+                return;
+            }
+
             const question = document.getElementById('questionInput').value.trim();
             if (question.length < 10) {
                 alert('질문을 최소 10자 이상 입력해주세요.');
