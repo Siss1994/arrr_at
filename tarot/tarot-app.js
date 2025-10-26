@@ -349,20 +349,24 @@ function animateCardSpread() {
 
 // API로 타로 해석 요청
 async function callTarotAPI(question, cards) {
-    const prompt = `당신은 전문 타로 리더입니다. 다음 질문과 선택된 카드를 바탕으로 간결하고 의미있는 타로 해석을 제공하세요.
+    const cardNames = cards.map(c => c.name);
 
-질문: ${question}
-선택된 카드: ${cards.map(c => c.name).join(', ')}
+    console.log('API 요청 시작...');
+    console.log('질문:', question);
+    console.log('카드:', cardNames);
 
-각 카드가 나타내는 의미(과거/원인, 현재/상황, 미래/결과)를 2-3문장으로 해석하고, 마지막에 종합 조언을 주세요.
-한국어로 작성하고, 신비롭고 따뜻한 어조를 사용하세요.`;
+    const response = await fetch(TAROT_API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            question: question,
+            cards: cardNames,
+            category: 'general'
+        })
+    });
 
-    const url = `${TAROT_API_URL}?message=${encodeURIComponent(prompt)}`;
-
-    console.log('API 요청 URL:', url);
-    console.log('Calling Tarot API...');
-
-    const response = await fetch(url);
     console.log('API 응답 상태:', response.status);
 
     if (!response.ok) {
@@ -376,7 +380,7 @@ async function callTarotAPI(question, cards) {
         throw new Error(data.error || 'API 응답 오류');
     }
 
-    return data.response;
+    return data.interpretation;
 }
 
 // 타로 해석 요청 (API)
