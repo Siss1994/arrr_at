@@ -348,12 +348,17 @@
             flex: 1;
             position: relative;
             cursor: pointer;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         #three-canvas {
             width: 100%;
             height: 100%;
             display: block;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* 셔플 상태 메시지 */
@@ -1001,7 +1006,15 @@
 
                 // 이벤트 리스너
                 this.canvas.addEventListener('click', (e) => this.onCanvasClick(e));
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    this.onCanvasClick(e.changedTouches ? e.changedTouches[0] : e);
+                });
                 this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e));
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    this.onMouseMove(e.touches ? e.touches[0] : e);
+                });
                 window.addEventListener('resize', () => this.onWindowResize());
 
                 // 애니메이션 시작
