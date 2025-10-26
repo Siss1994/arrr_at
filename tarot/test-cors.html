@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS 테스트</title>
+</head>
+<body>
+    <h1>Tarot API CORS 테스트</h1>
+    <button onclick="testAPI()">API 테스트</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testAPI() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'API 호출 중...\n';
+
+            try {
+                console.log('API 호출 시작');
+
+                const response = await fetch('https://tarot.api.arrr.at/input', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: "테스트 질문",
+                        cards: ["바보", "마법사"],
+                        category: 'general'
+                    })
+                });
+
+                console.log('응답 상태:', response.status);
+                console.log('응답 헤더:', [...response.headers.entries()]);
+
+                const data = await response.json();
+                console.log('응답 데이터:', data);
+
+                resultEl.textContent = 'SUCCESS!\n\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('에러 발생:', error);
+                resultEl.textContent = 'ERROR!\n\n' + error.message + '\n\n' + error.stack;
+            }
+        }
+    </script>
+</body>
+</html>
