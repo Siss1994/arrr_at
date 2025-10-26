@@ -359,12 +359,19 @@ async function callTarotAPI(question, cards) {
 
     const url = `${TAROT_API_URL}?message=${encodeURIComponent(prompt)}`;
 
+    console.log('API 요청 URL:', url);
+    console.log('Calling Tarot API...');
+
     const response = await fetch(url);
+    console.log('API 응답 상태:', response.status);
+
     if (!response.ok) {
         throw new Error(`API 요청 실패: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('API 응답 데이터:', data);
+
     if (!data.success) {
         throw new Error(data.error || 'API 응답 오류');
     }
